@@ -29,7 +29,7 @@ function createMockApi(results: JiraCommandResult[] = []) {
   return { api, tools, calls };
 }
 
-describe("pi-jira extension", () => {
+describe("pi-jira-integration extension", () => {
   it("registers the three read-only Jira tools", () => {
     const { api, tools } = createMockApi();
 
