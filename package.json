@@ -5,6 +5,9 @@
   "description": "Monorepo for personal Pi coding agent extensions, published individually to npm.",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "workspaces": [
     "packages/*"
   ],
