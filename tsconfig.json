@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/hello-world" }
+    { "path": "packages/hello-world" },
+    { "path": "packages/jira" }
   ]
 }
