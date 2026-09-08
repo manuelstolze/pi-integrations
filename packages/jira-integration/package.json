@@ -1,6 +1,6 @@
 {
   "name": "@manuelstolze/pi-jira-integration",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pi extension and skill for read-only Jira issue access.",
   "type": "module",
   "license": "MIT",
