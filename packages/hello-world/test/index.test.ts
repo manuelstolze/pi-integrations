@@ -3,9 +3,13 @@ import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-c
 import helloWorld from "../src/index.ts";
 
 function createMockApi() {
-  const commands = new Map<string, { handler: (args: string, ctx: ExtensionCommandContext) => Promise<void> }>();
+  type RegisteredCommand = {
+    description?: string;
+    handler: (args: string, ctx: ExtensionCommandContext) => Promise<void>;
+  };
+  const commands = new Map<string, RegisteredCommand>();
   const api = {
-    registerCommand: vi.fn((name: string, options: { handler: (args: string, ctx: ExtensionCommandContext) => Promise<void> }) => {
+    registerCommand: vi.fn((name: string, options: RegisteredCommand) => {
       commands.set(name, options);
     }),
   } as unknown as ExtensionAPI;
