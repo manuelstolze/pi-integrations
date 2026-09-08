@@ -19,7 +19,7 @@ Extensions are plain npm packages that:
 - Declare their entry point under the `pi.extensions` field in `package.json`.
 - Declare `@earendil-works/pi-coding-agent` as a `peerDependency` (users already have Pi installed).
 
-See [`packages/hello-world`](./packages/hello-world) for a minimal, working example that registers a `/hello` slash command. See [`packages/jira`](./packages/jira) for read-only Jira tools and the bundled `jira-integration` skill.
+See [`packages/hello-world`](./packages/hello-world) for a minimal, working example that registers a `/hello` slash command. See [`packages/jira-integration`](./packages/jira-integration) for read-only Jira tools and the bundled `jira-integration` skill.
 
 ## Getting started
 

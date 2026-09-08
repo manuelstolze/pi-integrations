@@ -75,7 +75,7 @@ From the repository root:
 ```bash
 npm install
 npm run build --workspace @manuelstolze/pi-jira-integration
-npm test -- --run packages/jira/test
+npm test -- --run packages/jira-integration/test
 npm run typecheck
 ```
 
