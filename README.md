@@ -10,7 +10,7 @@ packages/
     src/index.ts       # extension entry point (default-exports an ExtensionFactory)
     test/              # vitest tests
     package.json        # "pi": { "extensions": ["./dist/index.js"] }
-  jira/                # read-only Jira tools and workflow skill
+  jira-integration/    # read-only Jira tools and workflow skill
 ```
 
 Extensions are plain npm packages that:
