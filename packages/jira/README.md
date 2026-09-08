@@ -1,4 +1,4 @@
-# @manuelstolze/pi-jira
+# @manuelstolze/pi-jira-integration
 
 A Pi package that provides read-only Jira tools and a Jira workflow skill.
 
@@ -19,7 +19,7 @@ Jira descriptions and comments are treated as untrusted data. The package does n
 Install the package with Pi:
 
 ```bash
-pi install npm:@manuelstolze/pi-jira
+pi install npm:@manuelstolze/pi-jira-integration
 ```
 
 The package needs the Atlassian CLI (`acli`):
@@ -74,7 +74,7 @@ From the repository root:
 
 ```bash
 npm install
-npm run build --workspace @manuelstolze/pi-jira
+npm run build --workspace @manuelstolze/pi-jira-integration
 npm test -- --run packages/jira/test
 npm run typecheck
 ```

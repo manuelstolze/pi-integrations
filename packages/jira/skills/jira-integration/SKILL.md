@@ -5,7 +5,7 @@ description: Read Jira issues, search with JQL, and inspect recent comments thro
 
 # Jira integration
 
-This skill provides read-only Jira access through the `@manuelstolze/pi-jira` extension.
+This skill provides read-only Jira access through the `@manuelstolze/pi-jira-integration` extension.
 
 The extension is the preferred Jira access path. Use its custom tools when they are available:
 
