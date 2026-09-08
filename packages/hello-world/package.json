@@ -1,0 +1,39 @@
+{
+  "name": "@manuelstolze/pi-hello-world",
+  "version": "0.1.0",
+  "description": "Example Pi coding agent extension that adds a /hello slash command.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "pi",
+    "pi-extension",
+    "pi-package"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.85.1 <1"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.85.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manuelstolze/pi-integrations",
+    "directory": "packages/hello-world"
+  }
+}
