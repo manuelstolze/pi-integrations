@@ -10,6 +10,8 @@
 - **Extension**: An npm package that adds behavior to Pi.
 - **Workspace**: A package under `packages/` managed by the root npm workspace.
 - **Extension entry point**: The compiled JavaScript file that Pi loads for an extension.
+- **Skill**: Instructions that guide Pi through a specialized workflow and are loaded when needed.
+- **Jira integration**: Read-only access to Jira issue search, issue details, and comments.
 - **Changeset**: A Markdown file that describes a published package change and its required version bump.
 
 ## Package rules
