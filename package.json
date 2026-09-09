@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts",
-    "release": "npm run build && changeset publish"
+    "release": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.2",

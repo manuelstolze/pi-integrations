@@ -33,8 +33,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build packages
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
         run: npm run build
+
+      - name: Test
+        run: npm test
 
       - name: Create version pull request or publish to npm
         uses: changesets/action@v1
