@@ -47,7 +47,7 @@ echo "$JIRA_API_TOKEN" | acli jira auth login \
 You can set an optional project used by the skill when it builds JQL:
 
 ```bash
-export JIRA_DEFAULT_PROJECT="ODP"
+export JIRA_DEFAULT_PROJECT="PII"
 ```
 
 Generate an API token at <https://id.atlassian.com/manage-profile/security/api-tokens>.
@@ -59,8 +59,6 @@ Generate an API token at <https://id.atlassian.com/manage-profile/security/api-t
 - Jira commands have a 30-second timeout.
 
 ## Skill command
-
-The bundled skill is named `jira-integration` so it does not collide with a global skill named `jira`:
 
 ```text
 /skill:jira-integration
