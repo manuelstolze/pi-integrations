@@ -9,6 +9,9 @@ hosted repository review requests.
 
 - **Git hosting provider**: The service that hosts the repository and its review requests, such as GitHub or GitLab.
 - **Review request**: A GitHub pull request or GitLab merge request for reviewing proposed changes.
+- **Herald mode**: One of the `commit`, `request`, or `full` modes that controls which part of the Git workflow runs.
+- **Agent-led workflow**: A workflow where the extension prepares Git context and rules, then the Pi agent performs approved Git and review-request actions.
+- **Target branch**: The branch that receives a review request. Repository rules take priority; otherwise GitHub uses its default branch and GitLab uses `develop`, then `main`, then `master`.
 
 ## Behavior
 

@@ -90,6 +90,8 @@ Each extension package should:
 
 Use [`packages/hello-world`](./packages/hello-world) as the small reference package and template for new extensions. Keep package-specific code, tests, and documentation inside that package directory.
 
+For packages that integrate Pi with an external system, follow the hexagonal package rules in [`docs/hexagonal-packages.md`](./docs/hexagonal-packages.md). Keep domain and application code independent of Pi and process APIs. Put provider and Pi code in adapters, and keep `src/index.ts` as the composition root.
+
 When adding a package:
 
 1. Create `packages/<package-name>`.

@@ -1,7 +1,7 @@
 {
   "name": "@manuelstolze/pi-git-integration",
   "version": "0.1.0",
-  "description": "Pi extension for guided Git commits, pushes, and GitLab merge requests.",
+  "description": "Pi extension for guided Git commits, pushes, and GitHub or GitLab review requests.",
   "type": "module",
   "license": "MIT",
   "private": false,
@@ -10,6 +10,7 @@
     "pi-extension",
     "pi-package",
     "git",
+    "github",
     "gitlab"
   ],
   "main": "./dist/index.js",
