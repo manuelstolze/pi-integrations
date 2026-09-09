@@ -284,7 +284,7 @@ The plan contains:
 - Target repository.
 - Target branch.
 - Title.
-- Body.
+- Body, which may be empty.
 - Selected request template.
 - Commit summaries.
 - Validation results.
@@ -317,7 +317,7 @@ Cancel
 
 `Revise` returns feedback to the agent. `Cancel` stops without pushing.
 
-The request body includes concise validation results. It does not include full command output by default.
+The request body includes concise validation results when content exists. An empty request body is valid. It does not include full command output by default.
 
 ## 15. Request approval and creation
 

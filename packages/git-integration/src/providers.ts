@@ -92,8 +92,7 @@ export function createRequestArgs(input: RequestPlanInput): string[] {
       input.targetBranch,
       "--title",
       input.title,
-      "--body-file",
-      input.bodyFile,
+      ...(input.bodyFile ? ["--body-file", input.bodyFile] : ["--body", ""]),
     ]);
   }
   return cliArgs(input.provider, input.host, [
@@ -109,8 +108,7 @@ export function createRequestArgs(input: RequestPlanInput): string[] {
     input.targetBranch,
     "--title",
     input.title,
-    "--description-file",
-    input.bodyFile,
+    ...(input.bodyFile ? ["--description-file", input.bodyFile] : ["--description", ""]),
     "--yes",
   ]);
 }
@@ -128,8 +126,7 @@ export function updateRequestArgs(
       hostedRepository(input.provider, input.host, input.targetRepository),
       "--title",
       input.title,
-      "--body-file",
-      input.bodyFile,
+      ...(input.bodyFile ? ["--body-file", input.bodyFile] : ["--body", ""]),
     ]);
   }
   return cliArgs(input.provider, input.host, [
@@ -140,8 +137,7 @@ export function updateRequestArgs(
     hostedRepository(input.provider, input.host, input.targetRepository),
     "--title",
     input.title,
-    "--description-file",
-    input.bodyFile,
+    ...(input.bodyFile ? ["--description-file", input.bodyFile] : ["--description", ""]),
     "--yes",
   ]);
 }

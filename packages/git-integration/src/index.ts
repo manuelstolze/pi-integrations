@@ -78,7 +78,7 @@ type CommitPlanInput = Static<typeof commitPlanSchema>;
 
 const requestPlanSchema = Type.Object({
   title: Type.String(),
-  body: Type.String(),
+  body: Type.Optional(Type.String()),
 });
 
 type RequestPlanInput = Static<typeof requestPlanSchema>;
@@ -267,7 +267,7 @@ const heraldExtension: ExtensionFactory = (pi) => {
 
   async function executeRequest(workflow: ActiveWorkflow, request: ExistingRequest | undefined, title: string, body: string): Promise<string> {
     const temp = await createBodyFile(body);
-    const requestData = requestArgs(workflow, title, temp.file);
+    const requestData = requestArgs(workflow, title, body.trim() ? temp.file : "");
     try {
       await push(workflow);
       const cli = providerCli(requestData.provider);
@@ -373,7 +373,7 @@ const heraldExtension: ExtensionFactory = (pi) => {
 
   async function executeRequestPlan(input: RequestPlanInput, ctx: ExtensionContext) {
     const workflow = requireWorkflow("request-plan");
-    if (!input.title.trim() || !input.body.trim()) throw new Error("Request title and body are required.");
+    if (!input.title.trim()) throw new Error("Request title is required.");
     const freshContext = await collectGitContext(pi, workflow.state.cwd);
     if (!workflow.state.options.allowDirty && !isClean(freshContext.status)) {
       throw new Error("The working tree is not clean. Use --allow-dirty to continue explicitly.");
@@ -387,7 +387,7 @@ const heraldExtension: ExtensionFactory = (pi) => {
     }
 
     let title = input.title.trim();
-    let body = input.body.trim();
+    let body = input.body?.trim() ?? "";
     const existing = await findRequest(workflow);
     let selected: ExistingRequest | undefined;
     if (existing.length > 1 && ctx.hasUI) {
@@ -428,7 +428,8 @@ const heraldExtension: ExtensionFactory = (pi) => {
       const edited = await ctx.ui.editor("Edit the request title on the first line and the body below it.", `${title}\n\n${body}`);
       if (edited?.trim()) {
         const lines = edited.split("\n");
-        title = lines.shift()?.trim() ?? title;
+        const editedTitle = lines.shift()?.trim();
+        if (editedTitle) title = editedTitle;
         body = lines.join("\n").trim();
       }
     }

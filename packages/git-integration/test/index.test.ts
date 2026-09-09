@@ -215,6 +215,13 @@ describe("provider command construction", () => {
     ]);
   });
 
+  it("passes an explicit empty body when no body is provided", () => {
+    const args = createRequestArgs({ ...requestInput, bodyFile: "" });
+    const bodyIndex = args.indexOf("--body");
+    expect(bodyIndex).toBeGreaterThan(-1);
+    expect(args[bodyIndex + 1]).toBe("");
+  });
+
   it("builds provider-specific request lookup arguments", () => {
     expect(listRequestArgs("gitlab", "gitlab.example", "team/project", "feature/provider", "develop")).toContain("--source-branch");
     expect(listRequestArgs("github", "github.com", "team/project", "feature/provider", "main")).toContain("--head");
