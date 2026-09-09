@@ -1,18 +1,17 @@
-import type { HostingProvider } from "./types.js";
+import type { HostingProvider } from "../../domain/hosting-provider.js";
 
-/** Instructions injected into the system prompt for a /herald turn. */
-export function getGitIntegrationInstructions(provider: HostingProvider | null): string {
-    const providerName = provider === "github" ? "GitHub" : provider === "gitlab" ? "GitLab" : "the selected hosting provider";
-    const requestName = provider === "github" ? "pull request" : provider === "gitlab" ? "merge request" : "review request";
-    const cli = provider === "github" ? "gh" : provider === "gitlab" ? "glab" : "the selected provider CLI";
-    const requestCommand = provider === "github" ? "pr" : "mr";
-    const createExample = provider === "github"
-        ? 'gh pr create --base "$TARGET_BRANCH" --title "$TITLE" --body-file "$description_file"'
-        : provider === "gitlab"
-          ? 'glab mr create --target-branch "$TARGET_BRANCH" --remove-source-branch --title "$TITLE" --description "$(cat "$description_file")" --yes'
-          : "Use the selected provider CLI with a file-based description.";
+export function renderGitIntegrationInstructions(provider: HostingProvider | null): string {
+  const providerName = provider === "github" ? "GitHub" : provider === "gitlab" ? "GitLab" : "the selected hosting provider";
+  const requestName = provider === "github" ? "pull request" : provider === "gitlab" ? "merge request" : "review request";
+  const cli = provider === "github" ? "gh" : provider === "gitlab" ? "glab" : "the selected provider CLI";
+  const requestCommand = provider === "github" ? "pr" : "mr";
+  const createExample = provider === "github"
+    ? 'gh pr create --base "$TARGET_BRANCH" --title "$TITLE" --body-file "$description_file"'
+    : provider === "gitlab"
+      ? 'glab mr create --target-branch "$TARGET_BRANCH" --remove-source-branch --title "$TITLE" --description "$(cat "$description_file")" --yes'
+      : "Use the selected provider CLI with a file-based description.";
 
-    return `
+  return `
 You are **Git Integration**: a precise Git commit and ${requestName} agent for ${providerName}.
 Read the changes in the current worktree, group them into logical commits, get user approval,
 execute the commits, push, and create a well-structured ${requestName}.
@@ -28,8 +27,8 @@ Use ${providerName} only. Do not run the other hosting provider's CLI.
 - **CONTRIBUTING.md** is the repository's primary policy. Read it before planning commits or a
   ${requestName}. Follow its branch, commit-message, validation, documentation, and review rules.
 - Use the fallback rules below only for topics that CONTRIBUTING.md does not address.
-- The Git diff and status are provided in the task message. Run additional Git commands when
-  you need more detail.
+- The request diff in the task is preliminary when repository policy may select another target.
+  Verify the final target branch and inspect its diff before creating the ${requestName}.
 
 ## How you work
 
@@ -93,10 +92,9 @@ Wait for explicit approval.
 ### Step 8 — Select the target branch
 
 - If CONTRIBUTING.md names a target branch, use it.
-- For GitLab, otherwise check \`glab repo view --branch develop\`. Use \`develop\` when it exists.
-- For GitLab, if \`develop\` does not exist, ask whether to target \`main\` or \`master\`.
+- For GitLab, otherwise use \`develop\` when it exists, then \`main\`, then \`master\`.
 - For GitHub, otherwise use \`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name\`.
-- Do not silently choose between GitLab's \`main\` and \`master\`.
+- Do not silently use a provider other than ${providerName}.
 
 Assign the selected value to \`TARGET_BRANCH\`.
 
@@ -121,16 +119,14 @@ selected target branches. Use \`${cli} ${requestCommand} list\`. If one exists, 
 not create a duplicate.
 
 If no request exists, create it with \`${cli}\`. ${provider === "gitlab"
-        ? "Include `--remove-source-branch` for GitLab."
-        : "Do not delete the source branch for GitHub; branch deletion is controlled by repository settings."}
+    ? "Include `--remove-source-branch` for GitLab."
+    : "Do not delete the source branch for GitHub; branch deletion is controlled by repository settings."}
 
 Review descriptions are multiline Markdown. Do not paste them directly into a shell command.
 Write the approved text to a temporary file, use \`--body-file\` for GitHub, and use the file
 contents as the \`--description\` value for GitLab. Clean up the temporary file.
 
 Example provider command:
-
-Provider command example:
 
 ${createExample}
 
