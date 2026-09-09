@@ -266,8 +266,8 @@ const heraldExtension: ExtensionFactory = (pi) => {
   }
 
   async function executeRequest(workflow: ActiveWorkflow, request: ExistingRequest | undefined, title: string, body: string): Promise<string> {
-    const requestData = requestArgs(workflow, title, body);
     const temp = await createBodyFile(body);
+    const requestData = requestArgs(workflow, title, temp.file);
     try {
       await push(workflow);
       const cli = providerCli(requestData.provider);
