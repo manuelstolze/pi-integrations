@@ -12,14 +12,16 @@
  */
 
 import { isToolCallEventType, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { buildTask, isGitRepo, parseMode } from "./git.js";
-import { GIT_INTEGRATION_INSTRUCTIONS } from "./instructions.js";
+import { buildTask, detectHostingProvider, isGitRepo, parseMode } from "./git.js";
+import { getGitIntegrationInstructions } from "./instructions.js";
+import type { HostingProvider } from "./types.js";
 
 // ── Extension ──────────────────────────────────────────────────────────────────
 
 export default function gitIntegrationExtension(pi: ExtensionAPI): void {
     let pendingInstructions: string | null = null;
     let gitIntegrationActive = false;
+    let activeProvider: HostingProvider | null = null;
 
     // Require a Pi confirmation before Git Integration can perform permanent Git actions.
     pi.on("tool_call", async (event, ctx) => {
@@ -28,11 +30,13 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
         const command = event.input.command;
         const hasCommit = /\bgit\b[^;\n|]*\bcommit\b/.test(command);
         const hasPush = /\bgit\b[^;\n|]*\bpush\b/.test(command);
-        const hasMergeRequest = /\bglab\b[^;\n|]*\bmr\s+create\b/.test(command);
+        const hasGitLabRequest = activeProvider === "gitlab" && /\bglab\b[^;\n|]*\bmr\s+create\b/.test(command);
+        const hasGitHubRequest = activeProvider === "github" && /\bgh\b[^;\n|]*\bpr\s+create\b/.test(command);
         const actions = [
             hasCommit && "create a Git commit",
             hasPush && "push Git changes",
-            hasMergeRequest && "create a GitLab merge request",
+            hasGitLabRequest && "create a GitLab merge request",
+            hasGitHubRequest && "create a GitHub pull request",
         ].filter((action): action is string => Boolean(action));
         if (actions.length === 0) return;
 
@@ -51,6 +55,7 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
 
     pi.on("agent_settled", () => {
         gitIntegrationActive = false;
+        activeProvider = null;
     });
 
     // Inject Git Integration instructions into the system prompt before the agent turn runs
@@ -84,9 +89,21 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
 
             ctx.ui.notify(`Herald — ${mode} mode`, "info");
 
+            let provider: HostingProvider | null = null;
+            if (mode !== "commit") {
+                try {
+                    provider = await detectHostingProvider(pi, ctx.cwd);
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : String(error);
+                    ctx.ui.notify(message, "error");
+                    return;
+                }
+            }
+            activeProvider = provider;
+
             let task: string;
             try {
-                task = await buildTask(pi, mode, ctx.cwd);
+                task = await buildTask(pi, mode, ctx.cwd, provider);
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 ctx.ui.notify(`Could not collect Git context: ${message}`, "error");
@@ -94,7 +111,7 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
             }
 
             // Arm the system prompt injection for the next agent turn.
-            pendingInstructions = GIT_INTEGRATION_INSTRUCTIONS;
+            pendingInstructions = getGitIntegrationInstructions(provider);
             gitIntegrationActive = true;
 
             // Fire the task into the agent.
