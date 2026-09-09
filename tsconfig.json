@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/hello-world" },
-    { "path": "packages/jira-integration" }
+    { "path": "packages/jira-integration" },
+    { "path": "packages/git-integration" }
   ]
 }

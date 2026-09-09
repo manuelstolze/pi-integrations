@@ -18,6 +18,7 @@ packages/
     test/              # vitest tests
     package.json       # "pi": { "extensions": ["./dist/index.js"] }
   jira-integration/    # read-only Jira tools and workflow skill
+  git-integration/     # controlled Git commits and GitLab or GitHub requests
 ```
 
 Extensions are plain npm packages that:
@@ -27,6 +28,7 @@ Extensions are plain npm packages that:
 - Declare `@earendil-works/pi-coding-agent` as a `peerDependency` (users already have Pi installed).
 
 See [`packages/jira-integration`](./packages/jira-integration) for read-only Jira tools and the bundled `jira-integration` skill.
+See [`packages/git-integration`](./packages/git-integration) for controlled Git commits and GitLab merge requests or GitHub pull requests.
 See [`packages/hello-world`](./packages/hello-world) for a minimal, working example that registers a `/hello` slash command.
 
 ## Getting started
