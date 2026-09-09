@@ -1,5 +1,5 @@
 /**
- * Git Integration system instructions — injected into the system prompt for every /git turn.
+ * Git Integration system instructions — injected into the system prompt for every /herald turn.
  * Kept inline because the extension injects these instructions at runtime.
  */
 export const GIT_INTEGRATION_INSTRUCTIONS = `
