@@ -1,5 +1,12 @@
 # pi-integrations
 
+[![CI](https://github.com/manuelstolze/pi-integrations/actions/workflows/ci.yml/badge.svg)](https://github.com/manuelstolze/pi-integrations/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node.js >=22](https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Pi extension](https://img.shields.io/badge/Pi-extension-7c3aed)](https://github.com/earendil-works/pi)
+
+> A workshop of extensions, skills, and integrations for the Pi coding agent.
+
 A monorepo for personal [Pi coding agent](https://github.com/earendil-works/pi) extensions (`@earendil-works/pi-coding-agent` on npm). Each extension lives in its own package under [`packages/`](./packages) and is published independently to npm, so it can be installed and shared with others.
 
 ## Repository layout
