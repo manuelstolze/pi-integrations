@@ -125,6 +125,8 @@ npm run build --workspace @scope/package-name
 npm test -- --run packages/package-name/test
 ```
 
+For manual testing in a real Pi session, see [Test extensions locally](./docs/local-extension-testing.md).
+
 Do not include unrelated test failures in a pull request without explaining them. Record the validation commands and results in the pull request.
 
 ## Changesets and releases
