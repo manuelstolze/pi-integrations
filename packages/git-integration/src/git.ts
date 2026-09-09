@@ -50,14 +50,18 @@ function optionalLogOutput(result: GitResult): string {
 // ── Task builder ───────────────────────────────────────────────────────────────
 
 export function parseMode(args: string): GitMode {
-    // Take the first non-flag token as the mode.
-    const token = args
-        .split(/\s+/)
-        .map((t) => t.trim().toLowerCase())
-        .find((t) => t && !t.startsWith("--"));
+    const tokens = args.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return "full";
+
+    if (tokens.length !== 1) {
+        throw new Error("Invalid Herald mode. Use /herald, /herald commit, or /herald request.");
+    }
+
+    const token = tokens[0].toLowerCase();
     if (token === "commit") return "commit";
-    if (token === "mr") return "mr";
-    return "both";
+    if (token === "request") return "request";
+
+    throw new Error("Invalid Herald mode. Use /herald, /herald commit, or /herald request.");
 }
 
 export function isValidHeader(header: string): boolean {
@@ -89,13 +93,13 @@ export async function buildTask(pi: ExtensionAPI, mode: GitMode, cwd: string): P
     // Mode instruction.
     const modeNote: Record<GitMode, string> = {
         commit: "**Mode: commit only.** Establish policy, plan, and execute commits (Steps 1–6). Do NOT push or create an MR.",
-        mr: "**Mode: MR only.** Establish policy, prepare the MR, and push/create it (Steps 1 and 7–8). The commits are already done.",
-        both: "**Mode: full flow.** Complete all steps 1–8.",
+        request: "**Mode: request only.** Establish policy, prepare the MR, and push/create it (Steps 1 and 7–8). The commits are already done.",
+        full: "**Mode: full flow.** Complete all steps 1–8.",
     };
 
     // Build diff section.
     let diffSection: string;
-    if (mode === "mr") {
+    if (mode === "request") {
         // Keep this order aligned with the target-branch policy in instructions.ts.
         const [developResult, mainResult, masterResult] = await Promise.all([
             git(pi, ["rev-parse", "--verify", "origin/develop"], cwd),

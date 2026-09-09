@@ -6,9 +6,9 @@
  * a GitLab MR — all step by step with explicit approval gates.
  *
  * Usage:
- *   /herald          — full flow: commits → push → MR
- *   /herald commit   — commit only (no push, no MR)
- *   /herald mr       — MR only (assumes commits already done)
+ *   /herald             — full flow: commits → push → MR
+ *   /herald commit      — commit only (no push, no MR)
+ *   /herald request     — request only (assumes commits already done)
  */
 
 import { isToolCallEventType, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -64,17 +64,25 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
     });
 
     pi.registerCommand("herald", {
-        description: "Git commit and MR agent · [commit|mr] or both",
+        description: "Git commit and MR agent · [commit|request] or full",
         handler: async (args, ctx) => {
             if (!ctx.hasUI) return;
+
+            let mode: ReturnType<typeof parseMode>;
+            try {
+                mode = parseMode(args);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                ctx.ui.notify(message, "error");
+                return;
+            }
 
             if (!(await isGitRepo(pi, ctx.cwd))) {
                 ctx.ui.notify("Not a git repository.", "error");
                 return;
             }
 
-            const mode = parseMode(args);
-            ctx.ui.notify(`Git Integration starting — ${mode} mode`, "info");
+            ctx.ui.notify(`Herald — ${mode} mode`, "info");
 
             let task: string;
             try {

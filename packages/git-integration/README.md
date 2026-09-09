@@ -18,9 +18,9 @@ and configure `glab` if you want to use the merge request flow.
 Run the following commands inside a Pi session:
 
 ```text
-/herald          # commits, push, and merge request
-/herald commit   # commit only
-/herald mr       # push and merge request for existing commits
+/herald             # full flow: commits, push, and merge request
+/herald commit      # commit only
+/herald request     # push and merge request for existing commits
 ```
 
 The extension reads `CONTRIBUTING.md` before it plans commits or a merge
