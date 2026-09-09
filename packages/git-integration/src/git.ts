@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { GitMode } from "./types.js";
+import type { GitMode, HostingProvider } from "./types.js";
 
 // ── Git helpers ────────────────────────────────────────────────────────────────
 
@@ -29,6 +29,56 @@ export async function git(pi: ExtensionAPI, args: string[], cwd: string): Promis
 export async function isGitRepo(pi: ExtensionAPI, cwd: string): Promise<boolean> {
     const result = await git(pi, ["rev-parse", "--git-dir"], cwd);
     return result.code === 0;
+}
+
+function remoteHost(remoteUrl: string): string | null {
+    const scpMatch = remoteUrl.match(/^[^@]+@([^:]+):/);
+    if (scpMatch) return scpMatch[1].toLowerCase();
+
+    try {
+        return new URL(remoteUrl).hostname.toLowerCase();
+    } catch {
+        return null;
+    }
+}
+
+export function providerFromRemoteUrl(remoteUrl: string): HostingProvider | null {
+    return remoteHost(remoteUrl.trim()) === "github.com" ? "github" : null;
+}
+
+export async function detectHostingProvider(pi: ExtensionAPI, cwd: string): Promise<HostingProvider> {
+    const remoteResult = await git(pi, ["remote", "get-url", "origin"], cwd);
+    if (remoteResult.code !== 0 || !remoteResult.stdout) {
+        throw new Error("No usable origin remote found. Configure a GitHub or GitLab origin remote first.");
+    }
+
+    const provider = providerFromRemoteUrl(remoteResult.stdout);
+    if (provider === "github") {
+        try {
+            const result = await pi.exec(
+                "gh",
+                ["repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"],
+                { cwd, timeout: 10000 },
+            );
+            if (result.code === 0 && result.stdout.trim()) return "github";
+            throw new Error(result.stderr.trim() || `exit code ${result.code}`);
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            throw new Error(`Could not validate GitHub access with gh: ${detail}`);
+        }
+    }
+
+    try {
+        const result = await pi.exec("glab", ["repo", "view", "--output", "json"], {
+            cwd,
+            timeout: 10000,
+        });
+        if (result.code === 0) return "gitlab";
+        throw new Error(result.stderr.trim() || `exit code ${result.code}`);
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`Could not identify the Git hosting provider with glab: ${detail}`);
+    }
 }
 
 function gitFailure(result: GitResult, args: string[]): Error {
@@ -74,7 +124,12 @@ export function truncate(text: string, maxLen: number): string {
     return `${text.slice(0, maxLen)}\n\n... [truncated — ${text.length - maxLen} additional characters omitted]`;
 }
 
-export async function buildTask(pi: ExtensionAPI, mode: GitMode, cwd: string): Promise<string> {
+export async function buildTask(
+    pi: ExtensionAPI,
+    mode: GitMode,
+    cwd: string,
+    provider: HostingProvider | null = null,
+): Promise<string> {
     // Gather git context in parallel.
     const [statusResult, stagedResult, unstagedResult, logResult, branchResult] = await Promise.all([
         git(pi, ["status", "--short"], cwd),
@@ -93,30 +148,44 @@ export async function buildTask(pi: ExtensionAPI, mode: GitMode, cwd: string): P
     // Mode instruction.
     const modeNote: Record<GitMode, string> = {
         commit: "**Mode: commit only.** Establish policy, plan, and execute commits (Steps 1–6). Do NOT push or create an MR.",
-        request: "**Mode: request only.** Establish policy, prepare the MR, and push/create it (Steps 1 and 7–8). The commits are already done.",
-        full: "**Mode: full flow.** Complete all steps 1–8.",
+        request: "**Mode: request only.** Establish policy, prepare the review request, and push/create it (Steps 1 and 7–8). The commits are already done.",
+        full: "**Mode: full flow.** Complete all steps 1–9.",
     };
 
     // Build diff section.
     let diffSection: string;
     if (mode === "request") {
         // Keep this order aligned with the target-branch policy in instructions.ts.
-        const [developResult, mainResult, masterResult] = await Promise.all([
-            git(pi, ["rev-parse", "--verify", "origin/develop"], cwd),
-            git(pi, ["rev-parse", "--verify", "origin/main"], cwd),
-            git(pi, ["rev-parse", "--verify", "origin/master"], cwd),
-        ]);
-        const base = developResult.code === 0
-            ? "origin/develop"
-            : mainResult.code === 0
-              ? "origin/main"
-              : masterResult.code === 0
-                ? "origin/master"
-                : null;
+        let base: string | null = null;
+        if (provider === "github") {
+            const defaultBranchResult = await pi.exec(
+                "gh",
+                ["repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"],
+                { cwd, timeout: 10000 },
+            );
+            const defaultBranch = defaultBranchResult.code === 0 ? defaultBranchResult.stdout.trim() : "";
+            if (defaultBranch) {
+                const refResult = await git(pi, ["rev-parse", "--verify", `origin/${defaultBranch}`], cwd);
+                if (refResult.code === 0) base = `origin/${defaultBranch}`;
+            }
+        } else {
+            const [developResult, mainResult, masterResult] = await Promise.all([
+                git(pi, ["rev-parse", "--verify", "origin/develop"], cwd),
+                git(pi, ["rev-parse", "--verify", "origin/main"], cwd),
+                git(pi, ["rev-parse", "--verify", "origin/master"], cwd),
+            ]);
+            base = developResult.code === 0
+                ? "origin/develop"
+                : mainResult.code === 0
+                  ? "origin/main"
+                  : masterResult.code === 0
+                    ? "origin/master"
+                    : null;
+        }
 
         if (!base) {
             diffSection =
-                "## Diff vs base\n(no local origin/develop, origin/main, or origin/master ref found — inspect the target branch before creating the MR)";
+                `## Diff vs base\n(no local target-branch ref found — inspect the target branch before creating the review request)`;
         } else {
             const prDiffResult = await git(pi, ["diff", `${base}...HEAD`], cwd);
             if (prDiffResult.code !== 0) {
