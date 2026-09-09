@@ -9,10 +9,11 @@ and GitLab merge requests. It shares the review title, Markdown description,
 approval gates, push behavior, and duplicate-request check. Provider-specific
 CLI commands and target-branch rules remain behind the shared flow.
 
-The flow follows `CONTRIBUTING.md` before its fallback rules. It uses the
-GitLab `develop` preference when no repository rule defines a target. For
-GitHub, it uses the repository default branch. An existing open request for the
-same source and target branches is reused instead of creating a duplicate.
+The flow follows `CONTRIBUTING.md` before its fallback rules. For GitLab, it
+uses `develop`, then `main`, then `master` when no repository rule defines a
+target. For GitHub, it uses the repository default branch. An existing open
+request for the same source and target branches is reused instead of creating
+a duplicate.
 
 After a failed push or review-request creation, the integration stops and keeps
 all local commits and remote branches. It does not reset commits or delete

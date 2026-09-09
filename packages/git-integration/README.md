@@ -43,3 +43,7 @@ npm run typecheck
 
 The extension source is in `src/`. The compiled entry point is
 `dist/index.js`.
+
+The package follows the repository's hexagonal package structure. See
+[`../../docs/hexagonal-packages.md`](../../docs/hexagonal-packages.md) for the
+layer and testing rules.
