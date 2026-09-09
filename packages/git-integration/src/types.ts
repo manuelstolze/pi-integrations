@@ -1,3 +1,3 @@
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type GitMode = "commit" | "mr" | "both";
+export type GitMode = "commit" | "request" | "full";
