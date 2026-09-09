@@ -6,9 +6,9 @@
  * a GitLab MR — all step by step with explicit approval gates.
  *
  * Usage:
- *   /git          — full flow: commits → push → MR
- *   /git commit   — commit only (no push, no MR)
- *   /git mr       — MR only (assumes commits already done)
+ *   /herald          — full flow: commits → push → MR
+ *   /herald commit   — commit only (no push, no MR)
+ *   /herald mr       — MR only (assumes commits already done)
  */
 
 import { isToolCallEventType, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -63,7 +63,7 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
         };
     });
 
-    pi.registerCommand("git", {
+    pi.registerCommand("herald", {
         description: "Git commit and MR agent · [commit|mr] or both",
         handler: async (args, ctx) => {
             if (!ctx.hasUI) return;
