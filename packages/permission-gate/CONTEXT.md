@@ -22,6 +22,13 @@
 - Auto-deny matching uses literal substring checks. It does not parse shell syntax.
 - Bad config data causes a warning and uses built-in dangerous patterns. The extension does not overwrite the bad file.
 
+## Architecture
+
+- Pure command rules do not use Pi APIs or file APIs.
+- The application applies permission rules through ports for configuration, approval, and session approvals.
+- The interface layer handles Pi events, prompts, and session approvals.
+- The infrastructure layer reads and writes `guardrails.json`.
+
 ## Package conventions
 
 - The package entry point is `dist/index.js`.

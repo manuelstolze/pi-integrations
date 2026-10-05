@@ -1,14 +1,5 @@
-import {
-  DynamicBorder,
-} from "@earendil-works/pi-coding-agent";
-import {
-  Container,
-  Key,
-  Spacer,
-  Text,
-  matchesKey,
-  wrapTextWithAnsi,
-} from "@earendil-works/pi-tui";
+import { DynamicBorder } from "@earendil-works/pi-coding-agent";
+import { Container, Key, Spacer, Text, matchesKey, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 
 export type ConfirmResult = "allow-once" | "allow-session" | "allow-forever" | "deny";
 
