@@ -104,10 +104,14 @@ describe("Pi interface", () => {
   });
 
   it("uses the built-in selection when the custom dialog returns no result", async () => {
-    const { context, custom, select } = createContext({ selection: "3 - Allow forever" });
+    const { context, custom, select, input } = createContext({ selection: "3 - Allow forever" });
     const reportActive = vi.fn();
     const reportInactive = vi.fn();
-    const adapter = new PiPermissionApprovalAdapter(context as never, reportActive, reportInactive);
+    const adapter = new PiPermissionApprovalAdapter(
+      { hasUI: context.hasUI, custom, select, input },
+      reportActive,
+      reportInactive,
+    );
 
     await expect(adapter.request("sudo reboot", "superuser command")).resolves.toEqual({
       kind: "allow-forever",
@@ -121,7 +125,11 @@ describe("Pi interface", () => {
 
   it("asks for an alternative instruction after the user denies a command", async () => {
     const { context, input } = createContext({ customResult: "deny", instruction: "Run a safe check." });
-    const adapter = new PiPermissionApprovalAdapter(context as never, vi.fn(), vi.fn());
+    const adapter = new PiPermissionApprovalAdapter(
+      { hasUI: context.hasUI, custom: context.ui.custom, select: context.ui.select, input },
+      vi.fn(),
+      vi.fn(),
+    );
 
     await expect(adapter.request("sudo reboot", "superuser command")).resolves.toEqual({
       kind: "deny",
