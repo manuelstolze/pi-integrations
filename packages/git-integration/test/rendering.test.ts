@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderGitIntegrationInstructions } from "../src/adapters/pi/render-instructions.js";
-import { renderHeraldTask } from "../src/adapters/pi/render-task.js";
+import { renderGitIntegrationInstructions } from "../src/interface/pi/render-instructions.js";
+import { renderHeraldTask } from "../src/interface/pi/render-task.js";
 import type { PreparedHeraldRun } from "../src/application/use-cases/prepare-herald-run.js";
 
 const snapshot = {

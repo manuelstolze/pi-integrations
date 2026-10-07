@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProcessResult, ProcessRunner } from "../src/adapters/process/process-runner.js";
-import { GitCliAdapter } from "../src/adapters/git/git-cli-adapter.js";
-import { GitHubHostingAdapter } from "../src/adapters/hosting/github-adapter.js";
-import { GitLabHostingAdapter } from "../src/adapters/hosting/gitlab-adapter.js";
-import { HostingProviderRegistry } from "../src/adapters/hosting/provider-registry.js";
+import type { ProcessResult, ProcessRunner } from "../src/infrastructure/process/process-runner.js";
+import { GitCliAdapter } from "../src/infrastructure/git/git-cli-adapter.js";
+import { GitHubHostingAdapter } from "../src/infrastructure/hosting/github-adapter.js";
+import { GitLabHostingAdapter } from "../src/infrastructure/hosting/gitlab-adapter.js";
+import { HostingProviderRegistry } from "../src/infrastructure/hosting/provider-registry.js";
 
 function result(stdout = "", code = 0, stderr = ""): ProcessResult {
   return { stdout, stderr, code };
