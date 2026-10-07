@@ -1,13 +1,14 @@
-## Agent skills
+# Agent instructions
 
-### Issue tracker
+This repository is a monorepo for Pi coding agent extensions, published as separate npm packages.
 
-Issues are tracked in GitHub Issues for `manuelstolze/pi-integrations`. See `docs/agents/issue-tracker.md`.
+## Every task
 
-### Triage labels
+Read [the engineering constitution](.specify/memory/constitution.md) before each task. It sets mandatory rules and takes precedence over other repository guidance.
 
-Use the default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+## Load guidance when it applies
 
-### Domain docs
-
-This repository uses a multi-context layout with a root `CONTEXT-MAP.md`, context files for each domain or package, and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+- For package changes, tests, releases, or Git workflow, follow [Contributing](CONTRIBUTING.md).
+- Before changing package or domain behavior, read [the context map](CONTEXT-MAP.md) and follow [domain documentation guidance](docs/agents/domain.md).
+- When working with repository issues, follow [issue tracker guidance](docs/agents/issue-tracker.md).
+- When triaging or labeling repository issues, follow [triage label guidance](docs/agents/triage-labels.md).
