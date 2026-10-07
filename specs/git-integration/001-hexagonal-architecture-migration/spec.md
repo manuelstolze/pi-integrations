@@ -4,7 +4,7 @@ domain: git-integration
 services:
   - "@manuelstolze/pi-git-integration"
 product: Pi Git Integration
-status: draft
+status: approved
 owner: Manuel Stolze
 ---
 
@@ -72,3 +72,10 @@ The architecture must follow `docs/adr/0005-adopt-hexagonal-ddd-architecture.md`
 ## 8. Open questions
 
 None. The scope is a structure-only migration of `packages/git-integration`.
+
+## 9. Delivery notes
+
+- **Branch:** `refactor/001-hexagonal-architecture-migration`
+- **Commit subject:** `♻️ refactor(git-integration): migrate to hexagonal architecture`
+- **Pull request title:** `♻️ refactor(git-integration): migrate to hexagonal architecture`
+- **Pull request summary:** Separate Git rules and workflows from Pi, Git, provider, and process code without changing Git integration behavior or its public API.

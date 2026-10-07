@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import { registerGitIntegration } from "../src/adapters/pi/extension.js";
+import { registerGitIntegration } from "../src/interface/pi/extension.js";
 import type { GitRepositoryPort } from "../src/application/ports/git-repository-port.js";
 import type { HostingProviderPort } from "../src/application/ports/hosting-provider-port.js";
 
