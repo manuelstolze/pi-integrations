@@ -1,5 +1,6 @@
 ---
 status: accepted
+last_reviewed: "2026-10-06 — valid"
 ---
 
 # Use one review-request flow for GitHub and GitLab

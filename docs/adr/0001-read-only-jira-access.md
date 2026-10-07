@@ -1,5 +1,6 @@
 ---
 status: accepted
+last_reviewed: "2026-10-06 — valid"
 ---
 
 # Start with read-only Jira access

@@ -1,5 +1,6 @@
 ---
 status: accepted
+last_reviewed: "2026-10-07 — outdated"
 ---
 
 # Detect the Git hosting provider from the origin remote
