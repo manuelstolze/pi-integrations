@@ -2,6 +2,10 @@
 
 An example [Pi coding agent](https://github.com/earendil-works/pi) extension. It registers a `/hello [name]` slash command that shows a friendly notification, and exists as a template for building new extensions in this monorepo.
 
+## Compatibility
+
+Requires Node.js 22.19.0 or later and Pi API 1.1.0 or later in the 1.x line. Pi API 0.x hosts are not supported.
+
 ## Install
 
 ```bash

@@ -3,7 +3,7 @@ status: accepted
 date: 2026-10-07
 approvers:
   - Manuel Stolze
-last_reviewed: "2026-10-07 — valid"
+last_reviewed: "2026-10-08 — valid"
 ---
 
 # ADR 0008 — Declare Pi API packages as peer dependencies
@@ -17,6 +17,8 @@ We propose that extension packages declare Pi API packages as peer dependencies 
 Pi loads these packages as extensions and provides the Pi APIs they use. Each package must work with a compatible Pi API version. The current packages declare `@earendil-works/pi-coding-agent` as a peer dependency with the range `>=0.85.1 <1`, and also as a development dependency for workspace builds and tests. The permission-gate package also declares `@earendil-works/pi-tui` as a peer and development dependency.
 
 **Scope:** This decision covers Pi API packages supplied by the Pi host. It does not cover other runtime dependencies, such as `typebox`.
+
+> **As-built note (2026-10-08, REPO-001).** The decision is unchanged. The package manifests now declare `@earendil-works/pi-coding-agent` as `>=1.1.0 <2`, not `>=0.85.1 <1`. The permission-gate package now declares `@earendil-works/pi-tui` as `>=1.1.0 <2`. The text is left as written.
 
 ## Options in scope
 

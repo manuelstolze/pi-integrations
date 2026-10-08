@@ -2,6 +2,10 @@
 
 A Pi extension that asks before it runs bash commands that match dangerous patterns. It replaces the permission gate from `pi-guardrails`.
 
+## Compatibility
+
+Requires Node.js 22.19.0 or later, Pi API 1.1.0 or later in the 1.x line, and Pi TUI 1.1.0 or later in the 1.x line. Pi API and Pi TUI 0.x hosts are not supported.
+
 ## Install
 
 ```bash
