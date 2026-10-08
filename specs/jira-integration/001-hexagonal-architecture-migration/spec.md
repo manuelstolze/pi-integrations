@@ -4,7 +4,7 @@ domain: jira-integration
 services:
   - "@manuelstolze/pi-jira-integration"
 product: Pi Jira Integration
-status: draft
+status: approved
 owner: Manuel Stolze
 ---
 
