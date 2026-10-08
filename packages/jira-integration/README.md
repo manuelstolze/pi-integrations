@@ -2,6 +2,10 @@
 
 A Pi package that provides read-only Jira tools and a Jira workflow skill.
 
+## Compatibility
+
+Requires Node.js 22.19.0 or later and Pi API 1.1.0 or later in the 1.x line. Pi API 0.x hosts are not supported.
+
 ## What it provides
 
 The package registers three tools for the agent:

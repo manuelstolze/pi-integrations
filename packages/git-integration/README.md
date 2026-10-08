@@ -4,6 +4,10 @@ A Pi extension for guided Git commits, pushes, and GitHub pull requests or GitLa
 It collects Git context, creates a commit plan, and asks for approval before
 it performs permanent Git actions.
 
+## Compatibility
+
+Requires Node.js 22.19.0 or later and Pi API 1.1.0 or later in the 1.x line. Pi API 0.x hosts are not supported.
+
 ## Installation
 
 ```bash
