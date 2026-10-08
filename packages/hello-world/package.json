@@ -1,6 +1,6 @@
 {
   "name": "@manuelstolze/pi-hello-world",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Example Pi coding agent extension that adds a /hello slash command.",
   "type": "module",
   "license": "MIT",
