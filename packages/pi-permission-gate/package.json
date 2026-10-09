@@ -1,6 +1,6 @@
 {
   "name": "@manuelstolze/pi-permission-gate",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pi extension that asks before running dangerous bash commands.",
   "type": "module",
   "license": "MIT",

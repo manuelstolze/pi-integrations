@@ -1,6 +1,6 @@
 {
   "name": "@manuelstolze/pi-model-warning",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Pi extension that warns when an Opus model is active.",
   "type": "module",
   "license": "MIT",

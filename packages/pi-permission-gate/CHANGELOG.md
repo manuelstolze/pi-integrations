@@ -1,5 +1,11 @@
 # @manuelstolze/pi-permission-gate
 
+## 1.0.1
+
+### Patch Changes
+
+- 82b1620: Update the package repository directory metadata to `packages/pi-permission-gate`.
+
 ## 1.0.0
 
 ### Major Changes
