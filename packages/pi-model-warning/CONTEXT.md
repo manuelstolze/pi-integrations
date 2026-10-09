@@ -4,6 +4,15 @@
 
 `@manuelstolze/pi-model-warning` warns users when an Opus model becomes active or a session starts with Opus active.
 
+## Architecture
+
+- `src/domain/` owns Opus matching and warning eligibility rules. It does not import Pi or system APIs.
+- `src/application/` owns the warning workflow and declares the acknowledgement port. It depends on domain rules and does not import Pi APIs.
+- `src/interface/pi/` registers Pi events, maps Pi input, and handles acknowledgement dialogs. It implements the application's acknowledgement port.
+- `src/index.ts` connects the application workflow and Pi interface, then exports the extension.
+- The package has no `infrastructure/` layer because it has no file, process, or external service adapter. Pi APIs belong to the interface layer.
+- Dependencies point inward. Domain code does not depend on application or interface code.
+
 ## Terms
 
 - **Opus model**: A model whose ID contains `opus`, without letter-case sensitivity. Provider does not affect the match.

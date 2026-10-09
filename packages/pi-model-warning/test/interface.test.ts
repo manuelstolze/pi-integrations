@@ -1,35 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-  ModelSelectEvent,
-  SessionStartEvent,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import modelWarning, { isOpusModelId } from "../src/index.ts";
 
-type Handler = (event: any, context: any) => unknown;
+type Handler = (event: any, context: any) => Promise<void>;
 
 function createMockApi() {
   const handlers = new Map<string, Handler>();
-  const api = {
-    on: vi.fn((event: string, handler: Handler) => handlers.set(event, handler)),
-  } as unknown as ExtensionAPI;
-  return { api, handlers };
+  const on = vi.fn((event: string, handler: Handler) => handlers.set(event, handler));
+  return {
+    api: { on } as unknown as ExtensionAPI,
+    handlers,
+    on,
+  };
 }
 
 function createContext(options: {
   modelId?: string;
   hasUI?: boolean;
   mode?: ExtensionContext["mode"];
-  selections?: Array<string | undefined>;
   select?: ExtensionContext["ui"]["select"];
 } = {}) {
-  const selections = [...(options.selections ?? [])];
-  const select =
-    options.select ??
-    vi.fn(async () =>
-      options.selections === undefined ? "I understand — continue" : selections.shift(),
-    );
+  const select = options.select ?? vi.fn(async () => "I understand — continue");
   const context = {
     hasUI: options.hasUI ?? true,
     mode: options.mode ?? "tui",
@@ -42,29 +33,37 @@ function createContext(options: {
 function modelSelectEvent(
   modelId: string,
   previousModelId: string | undefined,
-  source: ModelSelectEvent["source"] = "set",
-): ModelSelectEvent {
+  source = "set",
+) {
   return {
     type: "model_select",
     model: { id: modelId },
     previousModel: previousModelId ? { id: previousModelId } : undefined,
     source,
-  } as ModelSelectEvent;
+  };
 }
 
-function sessionStartEvent(reason: SessionStartEvent["reason"]): SessionStartEvent {
+function sessionStartEvent(reason: string) {
   return { type: "session_start", reason };
 }
 
-describe("pi-model-warning extension", () => {
-  it("matches Opus in model IDs without case sensitivity", () => {
+describe("model-warning Pi interface", () => {
+  it("keeps the default extension factory and named model helper", () => {
+    expect(modelWarning).toBeTypeOf("function");
     expect(isOpusModelId("vendor/Model-Opus-Next")).toBe(true);
-    expect(isOpusModelId("anthropic/claude-opus-4")).toBe(true);
-    expect(isOpusModelId("vendor/sonnet")).toBe(false);
-    expect(isOpusModelId(undefined)).toBe(false);
   });
 
-  it("warns when a non-Opus or missing model changes to Opus", async () => {
+  it("registers model selection and session start events", () => {
+    const { api, on } = createMockApi();
+
+    modelWarning(api);
+
+    expect(on).toHaveBeenCalledTimes(2);
+    expect(on).toHaveBeenNthCalledWith(1, "model_select", expect.any(Function));
+    expect(on).toHaveBeenNthCalledWith(2, "session_start", expect.any(Function));
+  });
+
+  it("warns when set or cycle enters Opus from a non-Opus or missing model", async () => {
     const { api, handlers } = createMockApi();
     modelWarning(api);
     const { context, select } = createContext();
@@ -74,14 +73,27 @@ describe("pi-model-warning extension", () => {
     await onModelSelect(modelSelectEvent("other/OPUS-next", undefined, "cycle"), context);
 
     expect(select).toHaveBeenCalledTimes(2);
+    expect(select).toHaveBeenCalledWith(
+      "An Opus model is active. Acknowledge to continue.",
+      ["I understand — continue"],
+    );
   });
 
-  it("does not warn for Opus-to-Opus changes", async () => {
+  it("does not warn for restore, other sources, or Opus-to-Opus changes", async () => {
     const { api, handlers } = createMockApi();
     modelWarning(api);
     const { context, select } = createContext();
+    const onModelSelect = handlers.get("model_select")!;
 
-    await handlers.get("model_select")!(
+    await onModelSelect(
+      modelSelectEvent("provider/claude-opus", "provider/sonnet", "restore"),
+      context,
+    );
+    await onModelSelect(
+      modelSelectEvent("provider/claude-opus", "provider/sonnet", "other"),
+      context,
+    );
+    await onModelSelect(
       modelSelectEvent("provider/opus-next", "provider/claude-opus"),
       context,
     );
@@ -89,7 +101,7 @@ describe("pi-model-warning extension", () => {
     expect(select).not.toHaveBeenCalled();
   });
 
-  it.each(["startup", "new", "resume", "fork"] as const)(
+  it.each(["startup", "new", "resume", "fork"])(
     "warns when an Opus session starts with reason %s",
     async (reason) => {
       const { api, handlers } = createMockApi();
@@ -102,12 +114,18 @@ describe("pi-model-warning extension", () => {
     },
   );
 
-  it("does not warn on reload", async () => {
+  it("does not warn on reload or a session without Opus active", async () => {
     const { api, handlers } = createMockApi();
     modelWarning(api);
     const { context, select } = createContext({ modelId: "provider/claude-opus" });
+    const onSessionStart = handlers.get("session_start")!;
 
-    await handlers.get("session_start")!(sessionStartEvent("reload"), context);
+    await onSessionStart(sessionStartEvent("reload"), context);
+    await onSessionStart(
+      sessionStartEvent("startup"),
+      createContext({ modelId: "provider/sonnet" }).context,
+    );
+    await onSessionStart(sessionStartEvent("startup"), createContext().context);
 
     expect(select).not.toHaveBeenCalled();
   });

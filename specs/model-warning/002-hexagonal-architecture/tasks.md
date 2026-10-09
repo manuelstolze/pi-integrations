@@ -9,7 +9,7 @@ owner: Manuel Stolze
 
 # Tasks: Align Model Warning with hexagonal architecture
 
-- [ ] **T01** — Extract model-warning rules into the domain layer. Add pure
+- [x] **T01** — Extract model-warning rules into the domain layer. Add pure
   rules for Opus matching and warning eligibility. Keep Pi event types out of
   domain inputs. Add domain tests for model IDs, selection sources and prior
   models, session-start reasons, and the active model. Keep the current
@@ -18,7 +18,7 @@ owner: Manuel Stolze
   existing entry point still builds; the Opus matching and eligibility rules
   match the approved spec.
 
-- [ ] **T02** — Add the warning application workflow and acknowledgement port.
+- [x] **T02** — Add the warning application workflow and acknowledgement port.
   Define typed results for acknowledged, cancelled, and unavailable UI states.
   Coordinate domain eligibility with the port and retry after cancellation.
   Add application tests with a fake port.
@@ -26,7 +26,7 @@ owner: Manuel Stolze
   warnings, retry until acknowledgement, and completion without waiting when
   UI is unavailable; application imports no Pi or system APIs.
 
-- [ ] **T03** — Move Pi event and UI handling into the interface layer. Map
+- [x] **T03** — Move Pi event and UI handling into the interface layer. Map
   `model_select` and `session_start` events and Pi context to application
   inputs. Implement the acknowledgement port through the Pi UI. Wire the
   handlers through `src/index.ts` and retain the current default extension
@@ -37,7 +37,7 @@ owner: Manuel Stolze
   current event and mode behavior; `dist/index.js` still exposes the existing
   exports.
 
-- [ ] **T04** — Update the package context and check the layer boundaries.
+- [x] **T04** — Update the package context and check the layer boundaries.
   Record domain, application, and Pi interface responsibilities in
   `packages/pi-model-warning/CONTEXT.md` without changing its behavior rules.
   Review source imports and remove any old logic or tests that duplicate the
@@ -47,7 +47,7 @@ owner: Manuel Stolze
   infrastructure component exists; existing warning behavior remains
   covered.
 
-- [ ] **T05** — Add a patch changeset and run final checks. Add a changeset for
+- [x] **T05** — Add a patch changeset and run final checks. Add a changeset for
   `@manuelstolze/pi-model-warning`. Run `npm run typecheck`, `npm run build`,
   `npm test`, `npm run build --workspace @manuelstolze/pi-model-warning`, and
   `npm test -- --run packages/pi-model-warning/test` from the repository root.
