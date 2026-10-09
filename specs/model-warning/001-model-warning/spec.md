@@ -4,7 +4,7 @@ domain: model-warning
 services:
   - "@manuelstolze/pi-model-warning"
 product: Pi Integrations Workspace
-status: draft
+status: approved
 owner: Manuel Stolze
 ---
 
