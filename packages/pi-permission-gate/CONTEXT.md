@@ -1,4 +1,4 @@
-# Permission gate extension context
+# Pi Permission Gate extension context
 
 ## Purpose
 
