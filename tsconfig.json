@@ -3,6 +3,7 @@
   "references": [
     { "path": "packages/hello-world" },
     { "path": "packages/jira-integration" },
-    { "path": "packages/pi-permission-gate" }
+    { "path": "packages/pi-permission-gate" },
+    { "path": "packages/pi-model-warning" }
   ]
 }

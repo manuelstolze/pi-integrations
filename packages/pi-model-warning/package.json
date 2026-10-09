@@ -1,0 +1,42 @@
+{
+  "name": "@manuelstolze/pi-model-warning",
+  "version": "1.0.0",
+  "description": "Pi extension that warns when an Opus model is active.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "pi",
+    "pi-extension",
+    "pi-package",
+    "model-warning"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=1.1.0 <2",
+    "@earendil-works/pi-tui": ">=1.1.0 <2"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^1.1.0",
+    "@earendil-works/pi-tui": "^1.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manuelstolze/pi-integrations",
+    "directory": "packages/pi-model-warning"
+  }
+}
