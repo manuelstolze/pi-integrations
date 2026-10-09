@@ -4,7 +4,7 @@ domain: permission-gate
 services:
   - "@manuelstolze/pi-permission-gate"
 product: Pi Integrations Workspace
-status: draft
+status: approved
 owner: Manuel Stolze
 ---
 

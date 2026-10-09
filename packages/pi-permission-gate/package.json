@@ -38,6 +38,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/manuelstolze/pi-integrations",
-    "directory": "packages/permission-gate"
+    "directory": "packages/pi-permission-gate"
   }
 }
