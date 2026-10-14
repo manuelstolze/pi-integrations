@@ -1,5 +1,11 @@
 # @manuelstolze/pi-git-integration
 
+## 1.0.1
+
+### Patch Changes
+
+- 406185c: Enforce Herald mode action limits and show the exact command before approval.
+
 ## 1.0.0
 
 ### Major Changes
