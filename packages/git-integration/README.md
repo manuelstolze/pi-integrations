@@ -25,15 +25,21 @@ Install and authenticate the matching CLI if you want to use the request flow.
 Run the following commands inside a Pi session:
 
 ```text
-/herald             # full flow: commits, push, and merge request
-/herald commit      # commit only
-/herald request     # push and merge request for existing commits
+/herald             # full mode: commits, push, and review requests
+/herald commit      # commit mode: commits only
+/herald request     # request mode: push and review requests for existing commits
 ```
 
+Commit mode blocks push and review-request commands. Request mode blocks commit
+commands. Full mode allows all four action types: commits, pushes, GitHub pull
+requests, and GitLab merge requests. Before each allowed action, the extension
+asks for approval and shows the exact Bash command. It blocks mixed commands
+that include a disallowed action, commands when no user interface is available,
+and commands that the user does not approve.
+
 The extension reads `CONTRIBUTING.md` before it plans commits or a review
-request. It asks for approval before each commit, push, pull request, or merge
-request command. Request and full modes require a usable `origin` remote and a
-working, authenticated hosting CLI. Commit mode works without either.
+request. Request and full modes require a usable `origin` remote and a working,
+authenticated hosting CLI. Commit mode works without either.
 
 ## Development
 

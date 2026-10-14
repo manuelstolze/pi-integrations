@@ -17,11 +17,12 @@ hosted repository review requests.
 
 - The extension registers the `/herald` command.
 - `/herald` runs the full commit, push, and review-request flow.
-- `/herald commit` runs the commit flow only.
-- `/herald request` runs the review-request flow only.
+- `/herald commit` runs the commit flow only. Commit mode allows `git commit` actions and blocks pushes and review requests.
+- `/herald request` runs the review-request flow only. Request mode allows pushes and review requests, and blocks commits.
+- Full mode allows commits, pushes, and review requests.
 - The extension selects the Git hosting provider from the repository's origin and validates access before the full flow makes commits.
 - The extension prevents duplicate open review requests for the current source and target branches.
-- The extension asks for confirmation before commit, push, and review-request commands.
+- The extension asks for approval before every allowed recognized command and shows the exact Bash command. It blocks disallowed or mixed actions, actions without a user interface, and actions the user does not approve.
 - GitHub pull requests do not automatically delete their source branch; GitLab merge requests keep source-branch removal enabled.
 - The extension reads `CONTRIBUTING.md` and uses it as the first source for repository rules.
 
