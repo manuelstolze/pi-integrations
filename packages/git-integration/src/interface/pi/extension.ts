@@ -3,6 +3,7 @@ import { errorMessage, HeraldError } from "../../application/errors.js";
 import { prepareHeraldRun } from "../../application/use-cases/prepare-herald-run.js";
 import type { GitRepositoryPort } from "../../application/ports/git-repository-port.js";
 import type { HostingProviderPort } from "../../application/ports/hosting-provider-port.js";
+import type { GitMode } from "../../domain/git-mode.js";
 import type { HostingProvider } from "../../domain/hosting-provider.js";
 import { parseHeraldMode } from "./mode-parser.js";
 import { renderGitIntegrationInstructions } from "./render-instructions.js";
@@ -17,41 +18,59 @@ export type HeraldAdapterFactory = (cwd: string) => HeraldAdapters;
 
 export function registerGitIntegration(pi: ExtensionAPI, createAdapters: HeraldAdapterFactory): void {
   let pendingInstructions: string | null = null;
-  let gitIntegrationActive = false;
-  let activeProvider: HostingProvider | null = null;
+  let activeRun: { mode: GitMode; provider: HostingProvider | null } | null = null;
 
   pi.on("tool_call", async (event, ctx) => {
-    if (!gitIntegrationActive || !isToolCallEventType("bash", event)) return;
+    if (!activeRun || !isToolCallEventType("bash", event)) return;
 
     const command = event.input.command;
-    const hasCommit = /\bgit\b[^;\n|]*\bcommit\b/.test(command);
-    const hasPush = /\bgit\b[^;\n|]*\bpush\b/.test(command);
-    const hasGitLabRequest = activeProvider === "gitlab" && /\bglab\b[^;\n|]*\bmr\s+create\b/.test(command);
-    const hasGitHubRequest = activeProvider === "github" && /\bgh\b[^;\n|]*\bpr\s+create\b/.test(command);
     const actions = [
-      hasCommit && "create a Git commit",
-      hasPush && "push Git changes",
-      hasGitLabRequest && "create a GitLab merge request",
-      hasGitHubRequest && "create a GitHub pull request",
-    ].filter((action): action is string => Boolean(action));
+      {
+        detected: /\bgit\b[^;\n|]*\bcommit\b/.test(command),
+        label: "create a Git commit",
+        allowed: activeRun.mode === "commit" || activeRun.mode === "full",
+      },
+      {
+        detected: /\bgit\b[^;\n|]*\bpush\b/.test(command),
+        label: "push Git changes",
+        allowed: activeRun.mode === "request" || activeRun.mode === "full",
+      },
+      {
+        detected: /\bglab\b[^;\n|]*\bmr\s+create\b/.test(command),
+        label: "create a GitLab merge request",
+        allowed: activeRun.mode === "request" || activeRun.mode === "full",
+      },
+      {
+        detected: /\bgh\b[^;\n|]*\bpr\s+create\b/.test(command),
+        label: "create a GitHub pull request",
+        allowed: activeRun.mode === "request" || activeRun.mode === "full",
+      },
+    ].filter((action) => action.detected);
     if (actions.length === 0) return;
 
-    const actionLabel = actions.join(", ").replace(/, ([^,]*)$/, ", and $1");
+    const blockedActions = actions.filter((action) => !action.allowed);
+    if (blockedActions.length > 0) {
+      const actionLabel = blockedActions.map((action) => action.label).join(", ");
+      return {
+        block: true,
+        reason: `Git Integration blocked ${actionLabel} in ${activeRun.mode} mode.`,
+      };
+    }
+
     const approved = ctx.hasUI && await ctx.ui.confirm(
       "Git integration approval required",
-      `Allow Git Integration to ${actionLabel}?`,
+      `Allow this command to run?\n\n${command}`,
     );
     if (!approved) {
       return {
         block: true,
-        reason: `Git Integration blocked the request to ${actionLabel}.`,
+        reason: "Git Integration blocked the command because approval was not granted.",
       };
     }
   });
 
   pi.on("agent_settled", () => {
-    gitIntegrationActive = false;
-    activeProvider = null;
+    activeRun = null;
   });
 
   pi.on("before_agent_start", async (event) => {
@@ -66,10 +85,9 @@ export function registerGitIntegration(pi: ExtensionAPI, createAdapters: HeraldA
   pi.registerCommand("herald", {
     description: "Git commit and review-request agent · [commit|request] or full",
     handler: async (args, ctx) => {
-      await handleHeraldCommand(pi, args, ctx, createAdapters, (instructions, provider) => {
+      await handleHeraldCommand(pi, args, ctx, createAdapters, (instructions, mode, provider) => {
         pendingInstructions = instructions;
-        activeProvider = provider;
-        gitIntegrationActive = true;
+        activeRun = { mode, provider };
       });
     },
   });
@@ -80,7 +98,7 @@ async function handleHeraldCommand(
   args: string,
   ctx: ExtensionCommandContext,
   createAdapters: HeraldAdapterFactory,
-  arm: (instructions: string, provider: HostingProvider | null) => void,
+  arm: (instructions: string, mode: GitMode, provider: HostingProvider | null) => void,
 ): Promise<void> {
   if (!ctx.hasUI) return;
 
@@ -101,7 +119,7 @@ async function handleHeraldCommand(
     });
 
     ctx.ui.notify(`Herald — ${mode} mode`, "info");
-    arm(renderGitIntegrationInstructions(prepared.provider), prepared.provider);
+    arm(renderGitIntegrationInstructions(prepared.provider), mode, prepared.provider);
     pi.sendUserMessage(renderHeraldTask(prepared));
   } catch (error) {
     const message = error instanceof HeraldError

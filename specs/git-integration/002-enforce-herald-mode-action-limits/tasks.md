@@ -1,0 +1,13 @@
+# Enforce Herald mode action limits Tasks
+
+- [x] **T01** — Add table-driven tests in `packages/git-integration/test/pi-adapter.test.ts` for the action rules in commit, request, and full modes. Cover `git commit`, `git push`, `gh pr create`, and `glab mr create`, including provider mismatch, mixed allowed and blocked actions, denied approval, missing UI, exact command display, and mode/provider state reset. **Acceptance gate:** the tests exercise every required mode/action and failure case, and the test file runs; failures must identify behavior that the current guard does not yet enforce.
+- [x] **T02** — Update the Bash action guard in `packages/git-integration/src/interface/pi/extension.ts` to retain the active Herald mode for the agent turn, detect each recognized action independently of the selected provider, enforce the mode/action matrix, block mixed commands and commands without UI, and show the exact `event.input.command` before approval. Clear the active mode and provider when the agent turn settles. **Acceptance gate:** all focused tests from T01 pass, including approval of either hosting CLI's review-request command when its provider differs from the detected provider.
+- [x] **T03** — Update `packages/git-integration/CONTEXT.md` and `packages/git-integration/README.md` to describe the actions allowed in each Herald mode and the approval and blocking behavior. Add a patch Changeset for `@manuelstolze/pi-git-integration`. **Acceptance gate:** both documents describe the approved mode/action matrix and exact-command approval behavior; the Changeset names the package and uses a patch bump. Do not change ADR-0004.
+- [x] **T04** — Run the focused package checks and repository validation, then review the final diff for scope and generated files. **Acceptance gate:** record results for `npm test -- packages/git-integration/test/pi-adapter.test.ts`, `npm run build --workspace @manuelstolze/pi-git-integration`, `npm run typecheck`, `npm run build`, and `npm test`; distinguish any dependency-related failures from passing checks. Do not run `npm ci` or replace the dependency tree without owner approval. Confirm that no generated output, public extension API change, or ADR-0004 change is included.
+
+## Delivery
+
+- **Branch:** `fix/git-mode-action-limits`
+- **Commit subject:** `🐛 fix(git-integration): enforce Herald mode action limits`
+- **Pull request title:** `🐛 fix(git-integration): enforce Herald mode action limits`
+- **Pull request summary:** Enforce the action limits for each Herald mode, detect both hosting CLI request commands, and show the exact command before approval.
