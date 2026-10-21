@@ -4,7 +4,9 @@ A Pi extension that warns when an Opus model is active. It asks for an acknowled
 
 ## Compatibility
 
-Requires Node.js 22.19.0 or later and Pi API 1.1.0 or later in the 1.x line. Pi TUI 1.1.0 or later in the 1.x line is also required by the package's UI peer dependency.
+Requires Node.js 22.19.0 or later and Pi API 1.3.0 or later in the 1.x line.
+Pi TUI 1.3.0 or later in the 1.x line is also required by the package's UI peer
+dependency. Pi API and Pi TUI versions below 1.3.0 are not supported.
 
 ## Install
 

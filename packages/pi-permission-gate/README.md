@@ -4,7 +4,9 @@ A Pi extension that asks before it runs bash commands that match dangerous patte
 
 ## Compatibility
 
-Requires Node.js 22.19.0 or later, Pi API 1.1.0 or later in the 1.x line, and Pi TUI 1.1.0 or later in the 1.x line. Pi API and Pi TUI 0.x hosts are not supported.
+Requires Node.js 22.19.0 or later, Pi API 1.3.0 or later in the 1.x line, and
+Pi TUI 1.3.0 or later in the 1.x line. Pi API and Pi TUI versions below 1.3.0
+are not supported.
 
 ## Install
 

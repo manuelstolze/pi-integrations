@@ -21,7 +21,8 @@
 - Use `packages/hello-world` as the small reference package and template.
 - Export a default `ExtensionFactory` from the compiled entry point.
 - Declare the compiled entry point in the package `pi.extensions` field.
-- Declare `@earendil-works/pi-coding-agent` as a peer dependency.
+- Declare `@earendil-works/pi-coding-agent` as a peer dependency with range `>=1.3.0 <2` and a development dependency with range `^1.3.0`.
+- Packages that directly use `@earendil-works/pi-tui` declare it with the same peer and development dependency ranges. Pi and Pi TUI versions below 1.3.0 are not supported.
 - Add tests for user-facing behavior when practical.
 - Edit source files under `src/`, not generated files under `dist/`.
 

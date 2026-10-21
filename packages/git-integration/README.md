@@ -6,7 +6,8 @@ it performs permanent Git actions.
 
 ## Compatibility
 
-Requires Node.js 22.19.0 or later and Pi API 1.1.0 or later in the 1.x line. Pi API 0.x hosts are not supported.
+Requires Node.js 22.19.0 or later and Pi API 1.3.0 or later in the 1.x line.
+Pi API versions below 1.3.0 are not supported.
 
 ## Installation
 
