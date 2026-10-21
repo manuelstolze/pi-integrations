@@ -1,5 +1,11 @@
 # @manuelstolze/pi-git-integration
 
+## 1.0.2
+
+### Patch Changes
+
+- 96a9420: Support the first commit after `git init` without relying on the language of Git error messages. Preserve real Git errors, mode limits, remote requirements, and approval rules.
+
 ## 1.0.1
 
 ### Patch Changes
