@@ -27,7 +27,7 @@ export class GitCliAdapter implements GitRepositoryPort {
       status: requiredOutput(statusResult, ["status", "--short"]),
       stagedDiff: requiredOutput(stagedResult, ["diff", "--cached"]),
       unstagedDiff: requiredOutput(unstagedResult, ["diff"]),
-      recentCommits: optionalLogOutput(logResult),
+      recentCommits: await optionalLogOutput(logResult, this.runner),
       branch: requiredOutput(branchResult, ["branch", "--show-current"]),
     };
   }
@@ -55,8 +55,14 @@ function requiredOutput(result: ProcessResult, args: string[]): string {
   return result.stdout;
 }
 
-function optionalLogOutput(result: ProcessResult): string {
+async function optionalLogOutput(result: ProcessResult, runner: ProcessRunner): Promise<string> {
   if (result.code === 0) return result.stdout;
-  if (result.stderr.includes("does not have any commits yet")) return "";
+  if (result.code > 0) {
+    const head = await runner.run("git", ["symbolic-ref", "--quiet", "HEAD"]);
+    if (head.code === 0 && head.stdout.startsWith("refs/heads/") && head.stdout.length > "refs/heads/".length) {
+      const reference = await runner.run("git", ["show-ref", "--verify", "--quiet", head.stdout]);
+      if (reference.code === 1) return "";
+    }
+  }
   throw gitFailure(result, ["log", "--oneline", "-15"]);
 }

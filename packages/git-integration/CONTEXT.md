@@ -20,6 +20,8 @@ hosted repository review requests.
 - `/herald commit` runs the commit flow only. Commit mode allows `git commit` actions and blocks pushes and review requests.
 - `/herald request` runs the review-request flow only. Request mode allows pushes and review requests, and blocks commits.
 - Full mode allows commits, pushes, and review requests.
+- Commit mode supports the first commit after `git init` without a remote or hosting access. Full mode supports the first commit only when its existing remote and hosting-access requirements are met.
+- A current branch with no commits has empty history, regardless of the language of Git error messages. Herald states that no commits exist and retains available branch and change information. Other Git failures remain errors.
 - The extension selects the Git hosting provider from the repository's origin and validates access before the full flow makes commits.
 - The extension prevents duplicate open review requests for the current source and target branches.
 - The extension asks for approval before every allowed recognized command and shows the exact Bash command. It blocks disallowed or mixed actions, actions without a user interface, and actions the user does not approve.
