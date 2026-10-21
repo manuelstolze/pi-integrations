@@ -41,6 +41,12 @@ The extension reads `CONTRIBUTING.md` before it plans commits or a review
 request. Request and full modes require a usable `origin` remote and a working,
 authenticated hosting CLI. Commit mode works without either.
 
+After `git init`, use `/herald commit` to prepare the first commit. Herald
+reports that no commits exist and retains available branch and change information.
+This works regardless of the language of Git error messages. Other Git failures
+remain errors. Full mode also supports the first commit when its remote and
+hosting-access requirements are met. The same approval rules still apply.
+
 ## Development
 
 From the repository root:

@@ -49,16 +49,83 @@ describe("GitCliAdapter", () => {
     ]);
   });
 
-  it("treats a new repository log as empty", async () => {
+  it.each([
+    "Schwerwiegend: Ihr aktueller Branch 'master' hat noch keine Commits.",
+    "fatal: your current branch does not have any commits yet",
+    "history is unavailable",
+  ])("treats a missing branch reference as empty history: %s", async (message) => {
     const process = runner([
-      result("", 0),
-      result("", 0),
-      result("", 0),
-      result("", 128, "fatal: your current branch does not have any commits yet"),
-      result("main"),
+      result("AM file.ts"),
+      result("staged diff"),
+      result("unstaged diff"),
+      result("", 128, message),
+      result("master"),
+      result("refs/heads/master"),
+      result("", 1),
     ]);
 
-    await expect(new GitCliAdapter(process).snapshot()).resolves.toMatchObject({ recentCommits: "" });
+    await expect(new GitCliAdapter(process).snapshot()).resolves.toEqual({
+      status: "AM file.ts",
+      stagedDiff: "staged diff",
+      unstagedDiff: "unstaged diff",
+      recentCommits: "",
+      branch: "master",
+    });
+    expect(process.calls.slice(5)).toEqual([
+      ["git", "symbolic-ref", "--quiet", "HEAD"],
+      ["git", "show-ref", "--verify", "--quiet", "refs/heads/master"],
+    ]);
+  });
+
+  it.each([
+    { name: "an existing branch", symbolic: result("refs/heads/main"), reference: result() },
+    { name: "a failed branch lookup", symbolic: result("", 128, "lookup failed"), reference: null },
+    { name: "a detached HEAD", symbolic: result("", 1), reference: null },
+    { name: "an empty branch name", symbolic: result(), reference: null },
+    { name: "an incomplete branch reference", symbolic: result("refs/heads/"), reference: null },
+    { name: "a non-branch reference", symbolic: result("refs/tags/example"), reference: null },
+    { name: "a failed reference lookup", symbolic: result("refs/heads/main"), reference: result("", 128) },
+    { name: "a reference process failure", symbolic: result("refs/heads/main"), reference: result("", -1) },
+  ])("preserves the history error for $name", async ({ symbolic, reference }) => {
+    const message = "fatal: your current branch does not have any commits yet";
+    const process = runner([
+      result(), result(), result(), result("", 128, message), result("main"),
+      symbolic, ...(reference ? [reference] : []),
+    ]);
+
+    await expect(new GitCliAdapter(process).snapshot()).rejects.toThrow(
+      `git log --oneline -15 failed: ${message}`,
+    );
+    expect(process.calls).toHaveLength(reference ? 7 : 6);
+  });
+
+  it("does not treat a history process failure as empty history", async () => {
+    const process = runner([
+      result(), result(), result(), result("", -1, "spawn failed"), result("main"),
+      result("refs/heads/main"), result("", 1),
+    ]);
+
+    await expect(new GitCliAdapter(process).snapshot()).rejects.toThrow(
+      "git log --oneline -15 failed: spawn failed",
+    );
+    expect(process.calls).toHaveLength(5);
+  });
+
+  it.each([
+    { index: 0, command: "status --short" },
+    { index: 1, command: "diff --cached" },
+    { index: 2, command: "diff" },
+    { index: 4, command: "branch --show-current" },
+  ])("preserves a required $command failure without history", async ({ index, command }) => {
+    const results = [
+      result(), result(), result(), result("", 128, "no commits"), result("main"),
+      result("refs/heads/main"), result("", 1),
+    ];
+    results[index] = result("", 128, "read failed");
+
+    await expect(new GitCliAdapter(runner(results)).snapshot()).rejects.toThrow(
+      `git ${command} failed: read failed`,
+    );
   });
 });
 

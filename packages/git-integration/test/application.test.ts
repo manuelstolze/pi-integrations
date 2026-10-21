@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { GitRepositoryPort, RepositorySnapshot } from "../src/application/ports/git-repository-port.js";
 import type { HostingProviderPort } from "../src/application/ports/hosting-provider-port.js";
 import { prepareHeraldRun } from "../src/application/use-cases/prepare-herald-run.js";
@@ -51,6 +51,46 @@ describe("prepareHeraldRun", () => {
       provider: "gitlab",
       snapshot,
     });
+  });
+
+  it("prepares full mode with empty history after hosting validation", async () => {
+    const emptyHistory = { ...snapshot, recentCommits: "" };
+    const resolve = vi.fn(async () => "gitlab" as const);
+    const collect = vi.fn(async () => {
+      expect(resolve).toHaveBeenCalledOnce();
+      return emptyHistory;
+    });
+
+    await expect(prepareHeraldRun({
+      mode: "full",
+      git: fakeGit({ snapshot: collect }),
+      hosting: fakeHosting({ resolve }),
+    })).resolves.toEqual({ mode: "full", provider: "gitlab", snapshot: emptyHistory });
+    expect(collect).toHaveBeenCalledOnce();
+  });
+
+  it.each(["full", "request"] as const)("stops %s before context collection without an origin", async (mode) => {
+    const collect = vi.fn(async () => snapshot);
+    const resolve = vi.fn(async () => "gitlab" as const);
+
+    await expect(prepareHeraldRun({
+      mode,
+      git: fakeGit({ originUrl: async () => null, snapshot: collect }),
+      hosting: fakeHosting({ resolve }),
+    })).rejects.toMatchObject({ code: "missing-origin" });
+    expect(collect).not.toHaveBeenCalled();
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it.each(["full", "request"] as const)("stops %s before context collection when hosting fails", async (mode) => {
+    const collect = vi.fn(async () => snapshot);
+
+    await expect(prepareHeraldRun({
+      mode,
+      git: fakeGit({ snapshot: collect }),
+      hosting: fakeHosting({ resolve: async () => { throw new Error("Hosting access failed"); } }),
+    })).rejects.toMatchObject({ code: "provider-unavailable", message: "Hosting access failed" });
+    expect(collect).not.toHaveBeenCalled();
   });
 
   it("uses GitLab develop before other fallback branches", async () => {
