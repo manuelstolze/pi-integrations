@@ -1,4 +1,5 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { FileHeraldSettings } from "./infrastructure/config/file-herald-settings.js";
 import { GitCliAdapter } from "./infrastructure/git/git-cli-adapter.js";
 import { GitHubHostingAdapter } from "./infrastructure/hosting/github-adapter.js";
 import { GitLabHostingAdapter } from "./infrastructure/hosting/gitlab-adapter.js";
@@ -19,5 +20,5 @@ export default function gitIntegrationExtension(pi: ExtensionAPI): void {
         new GitLabHostingAdapter(runner),
       ]),
     };
-  });
+  }, new FileHeraldSettings(getAgentDir()));
 }

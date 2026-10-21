@@ -27,6 +27,12 @@ hosted repository review requests.
 - The extension asks for approval before every allowed recognized command and shows the exact Bash command. It blocks disallowed or mixed actions, actions without a user interface, and actions the user does not approve.
 - GitHub pull requests do not automatically delete their source branch; GitLab merge requests keep source-branch removal enabled.
 - The extension reads `CONTRIBUTING.md` and uses it as the first source for repository rules.
+- All Herald modes accept optional `herald.model` and `herald.thinkingLevel` settings. The model is an exact AI `provider/modelId`, not a Git hosting provider.
+- Herald reads the normal Pi user settings, honoring `PI_CODING_AGENT_DIR`, and trusted project `.pi/settings.json` before each command. Project values override user values per field. Changes apply to the next run without reloading Pi.
+- Missing fields retain the current chat values where supported. Herald restores temporary selections after completion, failure, cancellation, reload, or controlled session shutdown without changing settings files.
+- Later manual model and thinking selections are preserved where supported. If restoring the previous model makes a manual thinking choice unsupported, Herald restores that model, uses a supported level, and warns with correction steps.
+- An invalid or unavailable model produces a warning and uses the chat model. Invalid or unsupported thinking produces a warning and uses a supported level without discarding a usable selected model. Warnings name the source setting and explain how to fix it.
+- Overlapping Herald runs are not supported. Existing Git mode and approval rules remain in force regardless of AI model selection.
 
 ## Package conventions
 
