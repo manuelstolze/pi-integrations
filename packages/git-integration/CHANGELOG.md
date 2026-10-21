@@ -1,5 +1,16 @@
 # @manuelstolze/pi-git-integration
 
+## 1.1.0
+
+### Minor Changes
+
+- cad3fe4: Add optional Herald model and thinking-level settings in user and trusted project settings.json files. Apply project overrides per field and read settings before each command. Restore temporary selections after each run while preserving later manual choices where supported. Show settings warnings with correction steps and retain the existing Git mode and approval checks.
+- 2ec3a26: Require Pi 1.3.0 or later within the 1.x line. Pi 1.1.x and 1.2.x are no longer supported.
+  
+  Model-warning and permission-gate also require Pi TUI 1.3.0 or later within the 1.x line. Pi TUI 1.1.x and 1.2.x are no longer supported by these packages.
+  
+  Extension behavior and the Node.js minimum of 22.19.0 are unchanged.
+
 ## 1.0.2
 
 ### Patch Changes
