@@ -1,3 +1,4 @@
+import { Type } from "@earendil-works/pi-ai";
 import { isToolCallEventType, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { errorMessage, HeraldError } from "../../application/errors.js";
 import { prepareHeraldRun } from "../../application/use-cases/prepare-herald-run.js";
@@ -19,27 +20,93 @@ export interface HeraldAdapters {
 
 export type HeraldAdapterFactory = (cwd: string) => HeraldAdapters;
 
+const FINISH_TOOL = "herald_finish";
+type WorkflowResult = "completed" | "failed" | "cancelled";
+interface ActiveRun {
+  mode: GitMode;
+  provider: HostingProvider | null;
+  sessionId: string;
+  instructions: string;
+  ownsFinishTool: boolean;
+  result?: WorkflowResult;
+  outcome?: "completed" | "aborted" | "error";
+}
+
 export function registerGitIntegration(
   pi: ExtensionAPI,
   createAdapters: HeraldAdapterFactory,
   settings: HeraldSettingsPort = { read: async () => ({ sources: [], problems: [] }) },
 ): void {
   const models = new HeraldModelController(pi);
-  let pendingInstructions: string | null = null;
-  let activeRun: { mode: GitMode; provider: HostingProvider | null } | null = null;
+  let activeRun: ActiveRun | null = null;
   let starting: Promise<void> | null = null;
+  let finishing: Promise<void> | null = null;
+  let cancelling: Promise<void> | null = null;
   let closing = false;
   let generation = 0;
 
-  const finish = async (ctx: ExtensionContext) => {
-    await models.restore(ctx);
+  const clear = (ctx: ExtensionContext) => {
+    if (activeRun?.ownsFinishTool) {
+      pi.setActiveTools(pi.getActiveTools().filter((name) => name !== FINISH_TOOL));
+    }
     activeRun = null;
-    pendingInstructions = null;
+    ctx.ui.setStatus("herald", undefined);
   };
+  const finish = (ctx: ExtensionContext): Promise<void> => {
+    if (finishing) return finishing;
+    finishing = models.restore(ctx).finally(() => {
+      clear(ctx);
+      finishing = null;
+    });
+    return finishing;
+  };
+
+  const cancel = (ctx: ExtensionCommandContext): Promise<void> => {
+    if (cancelling) return cancelling;
+    if (!starting && !activeRun && !finishing) {
+      ctx.ui.notify("No Herald workflow is active.", "info");
+      return Promise.resolve();
+    }
+    generation += 1;
+    const pending = starting;
+    const running = activeRun !== null;
+    cancelling = (async () => {
+      if (running && !ctx.isIdle()) ctx.abort();
+      await pending;
+      if (running) await ctx.waitForIdle();
+      await finish(ctx);
+      ctx.ui.notify("Herald cancelled. Completed Git actions were not reversed.", "info");
+    })().finally(() => { cancelling = null; });
+    return cancelling;
+  };
+
+  pi.registerTool({
+    name: FINISH_TOOL,
+    label: "Finish Herald",
+    description: "Report the end of the active Herald workflow. Do not call while waiting for approval or revisions.",
+    exposure: "model-only",
+    defaultActive: false,
+    executionMode: "sequential",
+    parameters: Type.Object({
+      status: Type.Union([Type.Literal("completed"), Type.Literal("failed"), Type.Literal("cancelled")]),
+      summary: Type.String({ description: "Short account of the workflow result." }),
+    }),
+    async execute(_id, params, _signal, _onUpdate, ctx) {
+      if (!activeRun || activeRun.sessionId !== ctx.sessionManager.getSessionId()) {
+        return { isError: true, content: [{ type: "text", text: "No Herald workflow is active in this session." }], details: undefined };
+      }
+      activeRun.result ??= params.status;
+      return {
+        content: [{ type: "text", text: `Herald result recorded: ${activeRun.result}. Give the final summary without further Git mutations.` }],
+        details: { status: activeRun.result, summary: params.summary },
+      };
+    },
+  });
 
   pi.on("tool_call", async (event, ctx) => {
     if (!activeRun || !isToolCallEventType("bash", event)) return;
 
+    const run = activeRun;
     const command = event.input.command;
     const actions = [
       {
@@ -64,6 +131,9 @@ export function registerGitIntegration(
       },
     ].filter((action) => action.detected);
     if (actions.length === 0) return;
+    if (activeRun.result) {
+      return { block: true, reason: "Herald has reported its result. Further Git mutations are blocked until cleanup." };
+    }
 
     const blockedActions = actions.filter((action) => !action.allowed);
     if (blockedActions.length > 0) {
@@ -78,7 +148,7 @@ export function registerGitIntegration(
       "Git integration approval required",
       `Allow this command to run?\n\n${command}`,
     );
-    if (!approved) {
+    if (!approved || activeRun !== run || cancelling || run.result || ctx.signal?.aborted) {
       return {
         block: true,
         reason: "Git Integration blocked the command because approval was not granted.",
@@ -86,8 +156,14 @@ export function registerGitIntegration(
     }
   });
 
-  pi.on("agent_settled", async (_event, ctx) => {
-    if (activeRun) await finish(ctx);
+  pi.on("agent_before_settle", (event) => {
+    if (activeRun) activeRun.outcome = event.outcome;
+  });
+
+  pi.on("agent_settled", async (event, ctx) => {
+    if (activeRun && (activeRun.result || event.aborted || activeRun.outcome === "error" || activeRun.outcome === "aborted")) {
+      await finish(ctx);
+    }
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
@@ -97,21 +173,24 @@ export function registerGitIntegration(
     await finish(ctx);
   });
 
-  pi.on("before_agent_start", async (event) => {
-    if (!pendingInstructions) return;
-    const instructions = pendingInstructions;
-    pendingInstructions = null;
+  pi.on("before_agent_start", async (event, ctx) => {
+    if (!activeRun || activeRun.sessionId !== ctx.sessionManager.getSessionId()) return;
+    activeRun.outcome = undefined;
     return {
-      systemPrompt: `${event.systemPrompt}\n\n---\n\n${instructions}`,
+      systemPrompt: `${event.systemPrompt}\n\n---\n\n${activeRun.instructions}`,
     };
   });
 
   pi.registerCommand("herald", {
-    description: "Git commit and review-request agent · [commit|request] or full",
+    description: "Git commit and review-request agent · [commit|request|cancel] or full",
     handler: async (args, ctx) => {
       if (!ctx.hasUI) return;
-      if (starting || activeRun || closing) {
-        ctx.ui.notify("Herald is already running or closing. Wait for it to finish before starting another run.", "warning");
+      if (args.trim().toLowerCase() === "cancel") {
+        await cancel(ctx);
+        return;
+      }
+      if (starting || activeRun || finishing || cancelling || closing) {
+        ctx.ui.notify("Herald is already running or closing. Wait for completion or use /herald cancel before starting another run.", "warning");
         return;
       }
       const currentGeneration = generation;
@@ -119,10 +198,12 @@ export function registerGitIntegration(
       const isCurrent = () => generation === currentGeneration && ctx.sessionManager.getSessionId() === sessionId;
       starting = handleHeraldCommand(pi, args, ctx, createAdapters, settings, models, isCurrent,
         (instructions, mode, provider) => {
-          pendingInstructions = instructions;
-          activeRun = { mode, provider };
+          const activeTools = pi.getActiveTools();
+          activeRun = { mode, provider, sessionId, instructions, ownsFinishTool: !activeTools.includes(FINISH_TOOL) };
+          pi.setActiveTools([...new Set([...activeTools, FINISH_TOOL])]);
+          ctx.ui.setStatus("herald", `Herald: ${mode} — /herald cancel to exit`);
         },
-        () => { activeRun = null; pendingInstructions = null; },
+        () => clear(ctx),
       ).finally(() => { starting = null; });
       await starting;
     },

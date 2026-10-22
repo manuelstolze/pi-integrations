@@ -29,6 +29,7 @@ Run the following commands inside a Pi session:
 /herald             # full mode: commits, push, and review requests
 /herald commit      # commit mode: commits only
 /herald request     # request mode: push and review requests for existing commits
+/herald cancel      # leave an unfinished Herald workflow
 ```
 
 Commit mode blocks push and review-request commands. Request mode blocks commit
@@ -47,6 +48,31 @@ reports that no commits exist and retains available branch and change informatio
 This works regardless of the language of Git error messages. Other Git failures
 remain errors. Full mode also supports the first commit when its remote and
 hosting-access requirements are met. The same approval rules still apply.
+
+## Workflow lifetime and cancellation
+
+Herald stays active while it waits for approval in chat. A proposal and your
+reply belong to the same workflow. The Herald model, thinking level,
+instructions, and mode checks remain active across those messages. Approval in
+chat does not replace the exact-command approval dialogs.
+
+An active-workflow status shows the current mode and `/herald cancel`. The model
+calls `herald_finish`, an operation that reports completion, terminal failure,
+or cancellation. It must not call this operation while waiting for approval or
+revisions. In full mode, completion includes both commits and the review request.
+Herald restores the previous chat selections after the final answer finishes.
+The finish report does not itself prove that Git actions succeeded.
+
+If the model does not call `herald_finish`, Herald stays active. Run
+`/herald cancel` to leave it. This also works while Herald waits for your reply.
+During an active model request, cancellation stops that request before cleanup.
+Cancellation does not reverse completed commands, reset commits, or delete
+branches. Use `/herald cancel` before changing to unrelated chat work. Messages
+sent before Herald ends remain inside its workflow.
+
+A terminal model error, an aborted run, reload, or session change also clears
+Herald. Reload and session replacement do not resume an unfinished workflow.
+You can start another Herald command after cleanup completes.
 
 ## Herald model settings
 

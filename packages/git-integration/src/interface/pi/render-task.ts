@@ -16,6 +16,10 @@ export function renderHeraldTask(run: PreparedHeraldRun): string {
     "",
     modeNote[run.mode],
     "",
+    `Call herald_finish with status: "completed" ${run.mode === "commit"
+      ? "after the approved commits are verified"
+      : "after the push and review request are verified"}. Keep Herald active while waiting for approval or revisions.`,
+    "",
     "## Branch",
     `\`${run.snapshot.branch || "(unknown)"}\``,
     "",

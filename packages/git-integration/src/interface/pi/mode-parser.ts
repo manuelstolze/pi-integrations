@@ -19,6 +19,6 @@ export function parseHeraldMode(args: string): GitMode {
 function invalidMode(): HeraldError {
   return new HeraldError(
     "invalid-mode",
-    "Invalid Herald mode. Use /herald, /herald commit, or /herald request.",
+    "Invalid Herald mode. Use /herald, /herald commit, or /herald request. Use /herald cancel to leave an active workflow.",
   );
 }

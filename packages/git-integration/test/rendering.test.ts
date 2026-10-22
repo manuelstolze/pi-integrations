@@ -12,6 +12,24 @@ const snapshot = {
 };
 
 describe("Pi renderers", () => {
+  it("keeps approval questions separate from workflow completion", () => {
+    const text = renderGitIntegrationInstructions("github");
+    expect(text).toContain("herald_finish");
+    expect(text).toContain("Do not call it while waiting for approval or revisions");
+    expect(text).toContain('status: "failed"');
+    expect(text).toContain('status: "cancelled"');
+    expect(text).toContain("Do not finish full mode between commits and the review request");
+    expect(text).toContain("exact-command approval dialogs");
+  });
+
+  it.each(["commit", "request", "full"] as const)("defines when %s mode is complete", (mode) => {
+    const run = { mode, provider: "github", snapshot, targetBranch: "main", diff: { kind: "available", baseRef: "origin/main", text: "diff" } } as PreparedHeraldRun;
+    const text = renderHeraldTask(run);
+    expect(text).toContain("herald_finish");
+    expect(text).toContain('status: "completed"');
+    expect(text).toContain(mode === "commit" ? "after the approved commits are verified" : "after the push and review request are verified");
+  });
+
   it("renders a GitHub request with its provider instructions", () => {
     const run: PreparedHeraldRun = {
       mode: "request",
