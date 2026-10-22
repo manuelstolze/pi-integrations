@@ -1,5 +1,11 @@
 # @manuelstolze/pi-git-integration
 
+## 1.1.1
+
+### Patch Changes
+
+- 5da40a4: Keep the Herald model, thinking level, instructions, and mode checks active while waiting for approval in chat. Restore chat selections after explicit workflow completion. Add `/herald cancel` to leave an unfinished workflow without reversing completed Git actions.
+
 ## 1.1.0
 
 ### Minor Changes
