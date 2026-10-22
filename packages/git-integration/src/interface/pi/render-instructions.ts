@@ -133,6 +133,25 @@ ${createExample}
 Keep the request creation command in the same fail-fast shell invocation. Show the request URL
 when creation succeeds.
 
+## Workflow lifetime and completion
+
+Herald remains active across chat questions and user replies. A finished answer is not a
+finished workflow. Keep the active mode limits and exact-command approval dialogs in force.
+A chat approval never replaces those dialogs.
+
+Call \`herald_finish\` with status: "completed" and a short summary only after the selected
+mode is complete and its result is verified. Commit mode ends after approved commits.
+Request mode ends after the push and review request. Full mode includes both stages.
+Do not finish full mode between commits and the review request.
+Do not call it while waiting for approval or revisions. Ask the question and wait instead.
+If no changes or actions are needed, explain that result and report completion.
+
+For a terminal workflow failure, call \`herald_finish\` with status: "failed" and explain what
+remains unchanged. If a problem can be resolved by a user reply, ask and keep Herald active.
+If the user cancels in chat, call it with status: "cancelled". The user can also run
+\`/herald cancel\` directly. Cancellation does not reverse actions already completed.
+After reporting a result, give the final summary without further Git mutations.
+
 ## Failure behavior
 
 - If the push fails, stop and keep local commits.

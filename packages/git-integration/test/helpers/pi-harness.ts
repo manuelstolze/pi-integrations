@@ -24,6 +24,8 @@ export function createPiHarness() {
   } as SessionEntry);
   const handlers = new Map<string, Array<(event: any, ctx: any) => unknown>>();
   const commands = new Map<string, { handler: (args: string, ctx: ExtensionCommandContext) => Promise<void> }>();
+  const tools = new Map<string, any>();
+  let activeTools = ["read", "bash"];
   const queuedThinking: Array<{ level: HeraldThinkingLevel; previousLevel: HeraldThinkingLevel }> = [];
   let delayThinking = false;
   const notify = vi.fn();
@@ -38,9 +40,10 @@ export function createPiHarness() {
       hasConfiguredAuth: vi.fn(() => true),
     },
     waitForIdle: vi.fn(async () => {}),
-    isIdle: () => true,
+    isIdle: vi.fn(() => true),
+    abort: vi.fn(),
     isProjectTrusted: vi.fn(() => true),
-    ui: { notify, confirm: vi.fn(async () => true) },
+    ui: { notify, confirm: vi.fn(async () => true), setStatus: vi.fn() },
   } as unknown as ExtensionCommandContext;
 
   async function emit(type: string, event: any = {}, context: any = ctx) {
@@ -75,6 +78,9 @@ export function createPiHarness() {
       return () => handlers.set(event, list.filter((value) => value !== handler));
     }),
     registerCommand: vi.fn((name: string, command: any) => commands.set(name, command)),
+    registerTool: vi.fn((tool: any) => tools.set(tool.name, tool)),
+    getActiveTools: vi.fn(() => [...activeTools]),
+    setActiveTools: vi.fn((names: string[]) => { activeTools = [...names]; }),
     sendUserMessage: vi.fn(),
     getThinkingLevel: vi.fn(() => thinking),
     setThinkingLevel,
@@ -82,7 +88,8 @@ export function createPiHarness() {
   } as unknown as ExtensionAPI;
 
   return {
-    api, ctx, chat, herald, manual, models, notify, emit, setModel, setThinkingLevel, commands,
+    api, ctx, chat, herald, manual, models, notify, emit, setModel, setThinkingLevel, commands, tools,
+    finish: (status = "completed", context: any = ctx) => tools.get("herald_finish").execute("finish-1", { status, summary: "Test workflow ended." }, undefined, undefined, context),
     get model() { return current; },
     get thinking() { return thinking; },
     setSessionId: (id: string) => { sessionId = id; },

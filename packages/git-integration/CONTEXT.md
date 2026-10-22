@@ -20,6 +20,11 @@ hosted repository review requests.
 - `/herald commit` runs the commit flow only. Commit mode allows `git commit` actions and blocks pushes and review requests.
 - `/herald request` runs the review-request flow only. Request mode allows pushes and review requests, and blocks commits.
 - Full mode allows commits, pushes, and review requests.
+- One Herald workflow can contain multiple answers and user replies. A chat approval question does not end the workflow. Its model, thinking level, instructions, mode limits, and command approval checks remain active while waiting.
+- The model reports workflow completion, terminal failure, or cancellation through `herald_finish`. Restoration follows the final answer's settlement, not each chat pause. A finish report does not prove that Git actions succeeded. Further recognized Git mutations are blocked after a finish report until cleanup.
+- `/herald cancel` leaves an unfinished workflow and restores temporary selections. It aborts active Herald model activity, but never reverses completed Git actions. It does not abort unrelated activity when no Herald workflow is active.
+- Active status shows the mode and cancellation command. If the model omits its finish report, Herald stays active until cancellation or another cleanup boundary. Unrelated chat stays inside Herald until the workflow ends.
+- Terminal host errors, aborted runs, reload, and session replacement clear Herald state. An unfinished workflow does not resume after reload or session replacement.
 - Commit mode supports the first commit after `git init` without a remote or hosting access. Full mode supports the first commit only when its existing remote and hosting-access requirements are met.
 - A current branch with no commits has empty history, regardless of the language of Git error messages. Herald states that no commits exist and retains available branch and change information. Other Git failures remain errors.
 - The extension selects the Git hosting provider from the repository's origin and validates access before the full flow makes commits.
