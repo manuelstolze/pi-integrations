@@ -13,10 +13,12 @@ Repository paths below are relative to the repository root unless given as Markd
 
 - Read `CONSTITUTION.md`, `CONTEXT-MAP.md`, and the relevant package context first.
 - Define WHAT, never HOW.
+- Use the domain-bucketed layout and create the spec by hand from
+  `SPEC-TEMPLATE.md`.
+- The `owner` in the front matter is the human owner who approves the spec (`'@owner'`).
 - Do not write implementation code until the human owner approves the spec, plan, and tasks.
 - Write the branch name, the commit subject and the pull request based on
   [`CONTRIBUTING`](../../../../CONTRIBUTING.md).
-
 
 ## Required workflow
 
