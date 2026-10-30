@@ -4,7 +4,7 @@ This repository is a monorepo for Pi coding agent extensions, published as separ
 
 ## Every task
 
-Read [the engineering constitution](.specify/memory/constitution.md) before each task. It sets mandatory rules and takes precedence over other repository guidance.
+Read [the engineering constitution](CONSTITUTION.md) before each task. It sets mandatory rules and takes precedence over other repository guidance.
 
 ## Load guidance when it applies
 

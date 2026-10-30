@@ -7,9 +7,11 @@ description: Write the technical plan for an approved code-change specification.
 
 Write `plan.md` for an approved code-change `spec.md`.
 
+Repository paths below are relative to the repository root unless given as Markdown links.
+
 ## Rules
 
-- Read and follow `.specify/memory/constitution.md` before planning.
+- Read and follow `CONSTITUTION.md` before planning.
 - The human owner must approve `spec.md` first.
 - Define HOW: affected packages, modules, contracts, dependencies, and test strategy.
 - Name affected packages, modules, or repository areas. State whether their context files, docs, or

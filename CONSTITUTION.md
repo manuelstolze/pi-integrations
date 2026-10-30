@@ -1,10 +1,3 @@
-<!--
-Sync Impact Report
-Version: 1.1.0
-Change: Aligned the constitution with pi-integrations, kept the approved spec-first gate for every code change, and added the English-only artifact rule.
-Propagation: AGENTS.md now requires this constitution before every task and sets its precedence. Speckit workflows now apply the spec-first gate to all code changes and use repository context files.
--->
-
 # Engineering Constitution
 
 > This constitution defines mandatory engineering rules for the `pi-integrations` repository.

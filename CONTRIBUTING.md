@@ -2,6 +2,8 @@
 
 Thank you for contributing to `pi-integrations`. This repository is a monorepo for npm packages that extend the Pi coding agent. Each package under [`packages/`](./packages) is built and published independently.
 
+Read [the engineering constitution](./CONSTITUTION.md) before contributing. It defines mandatory repository-wide rules.
+
 ## Scope and change discipline
 
 - Keep changes small, focused, and easy to review.

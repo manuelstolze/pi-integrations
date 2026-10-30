@@ -7,9 +7,11 @@ description: Write the approved specification required before every code change.
 
 Write `specs/<domain>/<id>-<slug>/spec.md` for every code change, including features, bug fixes, refactors, and test changes.
 
+Repository paths below are relative to the repository root unless given as Markdown links.
+
 ## Rules
 
-- Read `.specify/memory/constitution.md`, `CONTEXT-MAP.md`, and the relevant package context first.
+- Read `CONSTITUTION.md`, `CONTEXT-MAP.md`, and the relevant package context first.
 - Define WHAT, never HOW.
 - Do not write implementation code until the human owner approves the spec, plan, and tasks.
 - Write the branch name, the commit subject and the pull request based on

@@ -7,9 +7,11 @@ description: Break an approved code-change plan into implementation tasks.
 
 Write `tasks.md` for an approved `plan.md`.
 
+Repository paths below are relative to the repository root unless given as Markdown links.
+
 ## Rules
 
-- Read and follow `.specify/memory/constitution.md` before writing tasks.
+- Read and follow `CONSTITUTION.md` before writing tasks.
 - The human owner must approve `plan.md` first.
 - Produce atomic, independently testable tasks; do not impose an artificial task-count limit.
 - Prefer vertical slices that deliver a testable outcome across the affected layers. Use a
@@ -27,7 +29,7 @@ Write `tasks.md` for an approved `plan.md`.
 
 ## Steps
 
-1. Read the approved plan, `.specify/memory/constitution.md`, and the relevant package context.
+1. Read the approved plan, `CONSTITUTION.md`, and the relevant package context.
 2. Split the work into small, testable tasks.
 3. Save `tasks.md`.
 4. Begin implementation only after the human owner approves `spec.md`, `plan.md`, and `tasks.md`.

@@ -38,7 +38,7 @@ If those commits cannot be read, ask for a local range or the missing files.
 
 Always read:
 
-- [Engineering constitution](../../../../.specify/memory/constitution.md). It takes precedence.
+- [Engineering constitution](../../../../CONSTITUTION.md). It takes precedence.
 - [Root agent instructions](../../../../AGENTS.md) and any directory instructions that apply to
   the changed files.
 - [Contributing](../../../../CONTRIBUTING.md) for package, test, Git, and release rules.

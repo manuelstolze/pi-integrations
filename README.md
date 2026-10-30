@@ -9,6 +9,8 @@
 
 A monorepo for personal [Pi coding agent](https://github.com/earendil-works/pi) extensions (`@earendil-works/pi-coding-agent` on npm). Each extension lives in its own package under [`packages/`](./packages) and is published independently to npm, so it can be installed and shared with others.
 
+See [the engineering constitution](./CONSTITUTION.md) for mandatory repository-wide rules.
+
 ## Repository layout
 
 ```
