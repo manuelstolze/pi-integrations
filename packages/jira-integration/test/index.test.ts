@@ -16,6 +16,7 @@ function createMockApi(results: JiraCommandResult[] = []) {
   const tools = new Map<string, RegisteredTool>();
   const calls: string[][] = [];
   const api = {
+    on: vi.fn(),
     registerTool: vi.fn((tool: RegisteredTool) => {
       tools.set(tool.name, tool);
     }),
@@ -30,13 +31,13 @@ function createMockApi(results: JiraCommandResult[] = []) {
 }
 
 describe("pi-jira-integration extension", () => {
-  it("registers the three read-only Jira tools", () => {
+  it("keeps the three read-only tools and adds one approved-update tool", () => {
     const { api, tools } = createMockApi();
 
     jiraExtension(api);
 
-    expect(api.registerTool).toHaveBeenCalledTimes(3);
-    expect([...tools.keys()]).toEqual(["jira_search", "jira_view", "jira_comments"]);
+    expect(api.registerTool).toHaveBeenCalledTimes(4);
+    expect([...tools.keys()]).toEqual(["jira_search", "jira_view", "jira_comments", "jira_update_description"]);
   });
 
   it("returns readable normalized search content", async () => {

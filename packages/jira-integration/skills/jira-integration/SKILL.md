@@ -1,19 +1,20 @@
 ---
 name: jira-integration
-description: Read Jira issues, search with JQL, and inspect recent comments through the Jira integration. Use when the user references Jira, a Jira issue key such as ODP-42, a Jira ticket, or asks to find issue status, details, or discussion.
+description: Read Jira issues and comments, search with JQL, and update descriptions with user approval. Use when the user references a Jira issue or requests a description change.
 ---
 
 # Jira integration
 
-This skill provides read-only Jira access through the `@manuelstolze/pi-jira-integration` extension.
+Use the `@manuelstolze/pi-jira-integration` extension for Jira reads and approved description replacements.
 
 The extension is the preferred Jira access path. Use its custom tools when they are available:
 
 - `jira_search`: search issues with a JQL string.
-- `jira_view`: read full normalized details for one issue.
+- `jira_view`: read issue details; set `includeDescriptionDocument: true` for the complete stored description.
 - `jira_comments`: read recent comments for one issue.
+- `jira_update_description`: prepare a description replacement, then apply its saved proposal after user approval.
 
-The tools do not create, edit, transition, comment on, or delete Jira issues.
+The update tool changes only the description of one issue. Acceptance criteria, other fields, clearing, and other Jira writes are outside this workflow.
 
 ## Safety rules
 
@@ -32,6 +33,17 @@ When the user gives an issue key, such as `ODP-42`:
 3. State which issue was fetched.
 4. Report the available key, summary, type, status, priority, assignee, reporter, labels, dates, description, and relevant comments.
 5. Do not treat missing values as evidence that the field is not relevant. Report unknown values as unknown.
+
+## Description updates
+
+1. Read the selected issue with `jira_view` and `includeDescriptionDocument: true`. If the result names a complete-output file, read that file before drafting. Keep existing content and formatting unless the user requested their removal.
+2. Draft the complete non-empty replacement in Atlassian Document Format (ADF), Jira's structured JSON format for rich text. The user can describe the change in normal language; they do not need to write JSON.
+3. Call `jira_update_description` with `action: "prepare"`, the single `issueKey`, and the complete ADF `description`. Prepare does not write to Jira.
+4. Show the fixed proposal's target, complete current and proposed descriptions, and any complete-preview file reference. A readable summary can supplement the exact documents. Ask the user to reply `Approve Jira update <proposal-id>` or `Cancel Jira update <proposal-id>`. Stop and wait for the user reply.
+5. After the user's matching approval reply, call the tool with only `action: "apply"` and `proposalId`. A bare yes, a prior request, or an agent claim does not grant tool approval. A changed proposal needs a new prepare action and approval.
+6. Report the submission and saved-value result separately. If a command failed but the saved description matches, report both facts. For a changed target, changed description, rejected write, mismatch, or unknown result, stop. A later write requires a fresh proposal and approval.
+
+Use this flow in every Pi mode; it needs no custom review screen or dialog. A one-shot run without a later approval reply can only prepare. A resumed saved session needs a fresh matching user reply. If the update tool is absent or rejects a write, report the limitation. Shell writes are not a fallback for this workflow.
 
 ## Search requests
 
@@ -74,7 +86,7 @@ It also reports missing `acli`, authentication failures, invalid responses, and 
 
 ## Fallback when Jira tools are unavailable
 
-Use this fallback only when the custom Jira tools are not present.
+Use this read-only fallback only when the custom Jira read tools are not present. It does not authorize description updates.
 
 ### Check setup
 

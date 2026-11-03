@@ -3,15 +3,24 @@ import { DEFAULT_COMMENT_LIMIT, DEFAULT_SEARCH_LIMIT, MAX_COMMENT_LIMIT, MAX_SEA
 import { requireLimit, requireText } from "../../domain/validation.js";
 import { JiraToolError } from "../errors.js";
 import type { JiraReadPort } from "../ports/jira-read-port.js";
+import type { JiraDescriptionPort } from "../ports/jira-description-port.js";
+import type { StoredDescription } from "../../domain/description-update.js";
+import type { JiraIssueDetails } from "../../domain/types.js";
 
 export interface JiraUseCases {
   search(jql: string, limit?: number, signal?: AbortSignal): ReturnType<JiraReadPort["search"]>;
   view(issueKey: string, signal?: AbortSignal): ReturnType<JiraReadPort["view"]>;
   comments(issueKey: string, limit?: number, signal?: AbortSignal): ReturnType<JiraReadPort["comments"]>;
+  viewDocument?(issueKey: string, signal?: AbortSignal): Promise<JiraIssueDetails & { descriptionDocument: StoredDescription }>;
 }
 
-export function createJiraUseCases(port: JiraReadPort): JiraUseCases {
+export function createJiraUseCases(port: JiraReadPort, descriptions?: JiraDescriptionPort): JiraUseCases {
   return {
+    async viewDocument(key, signal) {
+      if (!descriptions) throw new JiraToolError("command-failed", "Complete description access is unavailable.");
+      const snapshot = await descriptions.readDescription(requireText(key, "Issue key"), signal, true);
+      return { ...snapshot.issue, descriptionDocument: snapshot.descriptionDocument };
+    },
     async search(jql, limit = DEFAULT_SEARCH_LIMIT, signal) {
       try {
         return await port.search(
