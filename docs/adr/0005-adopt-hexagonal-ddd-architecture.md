@@ -1,6 +1,6 @@
 ---
 status: accepted
-last_reviewed: "2026-10-07 — outdated"
+last_reviewed: "2026-10-30 — valid"
 ---
 
 # Adopt Hexagonal + DDD Architecture

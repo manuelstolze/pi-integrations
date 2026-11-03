@@ -103,7 +103,7 @@ Review the compiled entry point and TypeScript declarations to confirm that the 
 ## 6. Documentation and release impact
 
 - No user-facing README, skill, or context change is planned because usage and behavior remain unchanged.
-- Existing rules in `packages/jira-integration/CONTEXT.md`, `docs/hexagonal-packages.md`, and ADR `docs/adr/0005-adopt-hexagonal-ddd-architecture.md` already cover this structure. Do not change them.
+- Existing rules in `packages/jira-integration/README.md`, `docs/hexagonal-packages.md`, and ADR `docs/adr/0005-adopt-hexagonal-ddd-architecture.md` already cover this structure. Do not change them.
 - Add a patch changeset for `@manuelstolze/pi-jira-integration`, because this refactor changes the source of a published package while keeping its public behavior stable.
 - Do not change dependencies or the root lockfile.
 

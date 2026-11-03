@@ -37,9 +37,9 @@ owner: Manuel Stolze
   current event and mode behavior; `dist/index.js` still exposes the existing
   exports.
 
-- [x] **T04** — Update the package context and check the layer boundaries.
+- [x] **T04** — Update the package README and check the layer boundaries.
   Record domain, application, and Pi interface responsibilities in
-  `packages/pi-model-warning/CONTEXT.md` without changing its behavior rules.
+  `packages/pi-model-warning/README.md` without changing its behavior rules.
   Review source imports and remove any old logic or tests that duplicate the
   new layer responsibilities.
   **Acceptance gate:** context describes the implemented boundaries; domain

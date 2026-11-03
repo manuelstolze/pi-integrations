@@ -36,7 +36,11 @@ Repository paths below are relative to the repository root.
 
 ## Version rules
 
-Use `MAJOR.MINOR.PATCH`. Select the highest applicable increase:
+Use `MAJOR.MINOR.PATCH`. If the constitution has no version, propose `1.0.0` for the
+first constitution update. Obtain explicit owner approval before setting it. In the Sync
+Impact Report, record the old version as `unversioned` and the new version as `1.0.0`.
+
+For later updates, select the highest applicable increase:
 
 | Increase | Change | Example |
 | --- | --- | --- |

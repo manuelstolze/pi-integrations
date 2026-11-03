@@ -1,19 +1,25 @@
 # Domain documentation
 
-This repository uses a multi-context layout.
+This repository uses a multi-context layout. Each context has its own vocabulary and rules.
 
 ## Layout
 
-- `CONTEXT-MAP.md` maps the repository to its domain and package context files.
-- Each domain or package can have its own `CONTEXT.md`.
-- `docs/adr/` contains architecture decision records that apply across the repository.
-- A context may have a local ADR directory when the context needs decisions that do not apply to the full repository.
+- `GLOSSARY-MAP.md` lists the repository and package glossaries and their relationships.
+- `GLOSSARY.md` defines shared repository terms. Each package has its own `GLOSSARY.md` for package terms.
+- `CONTRIBUTING.md` holds shared package, compatibility, and release rules.
+- Each package's `README.md` holds its behavior, interface, and implementation rules.
+- `docs/adr/` contains architecture decision records (ADRs) that apply across the repository.
+- A context may have a local ADR directory for decisions that apply only to that context.
+
+The repository and package context files named by the constitution are these glossaries and rule documents.
 
 ## Consumer rules
 
-1. Read `CONTEXT-MAP.md` before working on domain behavior.
-2. Read the context files that cover the requested package or domain.
-3. Read relevant root and local ADRs before changing a documented decision.
-4. Keep context files focused on stable domain rules and vocabulary.
-5. Update the relevant context or ADR when a change alters a documented rule or decision.
-6. Do not treat generated files, build output, or package README files as domain context unless the map points to them.
+1. Read `GLOSSARY-MAP.md` before working on domain behavior.
+2. Read the root glossary and the affected package glossaries for terms.
+3. Read `CONTRIBUTING.md` and the affected package README files for rules and behavior.
+4. Read relevant root and local ADRs before changing a documented decision.
+5. Keep glossaries limited to domain terms. Follow the domain-modeling skill's `GLOSSARY-FORMAT.md`.
+6. Update the relevant glossary when terms change. Update `GLOSSARY-MAP.md` when contexts or their relationships change.
+7. Update the relevant rule document or ADR when a documented rule or decision changes.
+8. Treat generated files and build output as implementation evidence, not as domain documentation.

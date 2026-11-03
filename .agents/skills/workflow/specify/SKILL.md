@@ -11,7 +11,7 @@ Repository paths below are relative to the repository root unless given as Markd
 
 ## Rules
 
-- Read `CONSTITUTION.md`, `CONTEXT-MAP.md`, and the relevant package context first.
+- Read `CONSTITUTION.md`, `GLOSSARY-MAP.md`, the root and relevant package glossaries, `CONTRIBUTING.md`, and the relevant package README first. Follow [domain documentation guidance](../../../../docs/agents/domain.md).
 - Define WHAT, never HOW.
 - Use the domain-bucketed layout and create the spec by hand from
   `SPEC-TEMPLATE.md`.
