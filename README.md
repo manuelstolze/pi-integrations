@@ -10,6 +10,9 @@
 A monorepo for personal [Pi coding agent](https://github.com/earendil-works/pi) extensions (`@earendil-works/pi-coding-agent` on npm). Each extension lives in its own package under [`packages/`](./packages) and is published independently to npm, so it can be installed and shared with others.
 
 See [the engineering constitution](./CONSTITUTION.md) for mandatory repository-wide rules.
+See [the glossary map](./GLOSSARY-MAP.md) for repository and package terms.
+Shared package and release rules are in [Contributing](./CONTRIBUTING.md).
+Package behavior and implementation rules are in each package's README.
 
 ## Repository layout
 
@@ -19,7 +22,7 @@ packages/
     src/index.ts       # extension entry point (default-exports an ExtensionFactory)
     test/              # vitest tests
     package.json       # "pi": { "extensions": ["./dist/index.js"] }
-  jira-integration/    # read-only Jira tools and workflow skill
+  jira-integration/    # Jira reads, approved description updates, and workflow skill
 ```
 
 Extensions are plain npm packages that:
@@ -28,7 +31,7 @@ Extensions are plain npm packages that:
 - Declare their entry point under the `pi.extensions` field in `package.json`.
 - Declare `@earendil-works/pi-coding-agent` as a `peerDependency` (users already have Pi installed).
 
-See [`packages/jira-integration`](./packages/jira-integration) for read-only Jira tools and the bundled `jira-integration` skill.
+See [`packages/jira-integration`](./packages/jira-integration) for Jira reads, approved description updates, and the bundled `jira-integration` skill.
 See [`packages/hello-world`](./packages/hello-world) for a minimal, working example that registers a `/hello` slash command.
 
 ## Getting started

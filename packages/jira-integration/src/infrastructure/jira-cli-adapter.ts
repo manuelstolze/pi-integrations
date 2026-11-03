@@ -1,6 +1,9 @@
 import { spawn } from "node:child_process";
 import { JiraToolError } from "../application/errors.js";
 import type { JiraReadPort } from "../application/ports/jira-read-port.js";
+import type { JiraDescriptionPort } from "../application/ports/jira-description-port.js";
+import { equalJson, issueKey, type DescriptionProposal, type DescriptionSnapshot, type JiraTarget, type StoredDescription, type Submission } from "../domain/description-update.js";
+import { DescriptionFiles } from "./description-files.js";
 import { JiraNormalizationError } from "../domain/errors.js";
 import {
   findJiraArray,
@@ -31,7 +34,7 @@ const SETUP_MESSAGE = [
 
 const MAX_ERROR_EXCERPT_LENGTH = 500;
 
-export class JiraCliAdapter implements JiraReadPort {
+export class JiraCliAdapter implements JiraReadPort, JiraDescriptionPort {
   private readonly runCommand: JiraClientOptions["runCommand"];
   private readonly login: JiraClientOptions["login"];
   private readonly env: NodeJS.ProcessEnv;
@@ -89,6 +92,65 @@ export class JiraCliAdapter implements JiraReadPort {
     } catch (error) {
       throw this.mapNormalizationError(error);
     }
+  }
+
+  async readDescription(key: string, signal?: AbortSignal, allowLogin = false): Promise<DescriptionSnapshot> {
+    issueKey(key);
+    if (allowLogin) await this.ensureAuthenticated(signal);
+    const target = await this.activeTarget(signal);
+    const payload = await this.runJson(
+      ["jira", "workitem", "view", key, "--json", "--fields", "*all"], signal, `Jira issue ${key}`,
+    );
+    const outer = asRecord(payload);
+    const root = asRecord(outer?.issue) ?? asRecord(outer?.data) ?? outer;
+    const fields = asRecord(root?.fields) ?? root;
+    if (!fields || !Object.hasOwn(fields, "description")) throw new JiraToolError("invalid-response", "The complete description is missing; it is not known to be empty.");
+    const raw = fields.description;
+    if (raw !== null && typeof raw !== "string" && (!asRecord(raw) || asRecord(raw)?.type !== "doc" || asRecord(raw)?.version !== 1 || !Array.isArray(asRecord(raw)?.content))) {
+      throw new JiraToolError("invalid-response", "Jira returned an unreadable description document.");
+    }
+    let issue;
+    try { issue = normalizeIssueDetails(payload); }
+    catch (error) { throw this.mapNormalizationError(error); }
+    if (issue.key !== key) throw new JiraToolError("invalid-response", "Jira returned a different issue key.");
+    return { target, issue, descriptionDocument: structuredClone(raw) as StoredDescription };
+  }
+
+  async replaceDescription(proposal: DescriptionProposal, signal?: AbortSignal): Promise<Submission> {
+    const result: Submission = { writeAttempted: false };
+    let file: Awaited<ReturnType<DescriptionFiles["create"]>> | undefined;
+    try {
+      issueKey(proposal.snapshot.issue.key);
+      if (!equalJson(await this.activeTarget(signal), proposal.snapshot.target)) throw new JiraToolError("authentication-failed", "The active Jira account or site changed.");
+      file = await new DescriptionFiles().create({ issues: [proposal.snapshot.issue.key], description: proposal.description });
+      if (signal?.aborted) throw new Error("Update cancelled before command submission.");
+      result.writeAttempted = true;
+      const command = await this.runRaw(
+        ["jira", "workitem", "edit", "--from-json", file.path, "--yes", "--json"], signal, "Jira description update",
+      );
+      if (command.killed) result.error = "Jira description update timed out or was cancelled; the saved result must be checked.";
+      else if (command.code !== 0) result.error = `Jira description update failed: ${this.sanitize(command.stderr) || `exit code ${command.code}`}`;
+    } catch (error) {
+      result.error = this.sanitize(error instanceof Error ? error.message : "Jira description update failed.");
+    } finally {
+      if (file) {
+        try { await file.remove(); }
+        catch { result.cleanupError = "The private Jira payload file could not be removed."; }
+      }
+    }
+    return result;
+  }
+
+  private async activeTarget(signal?: AbortSignal): Promise<JiraTarget> {
+    const result = await this.runRaw(["jira", "auth", "status"], signal, "Jira account check");
+    if (result.code !== 0 || result.killed) throw new JiraToolError("authentication-failed", "The active Jira account could not be established. Authenticate before preparing a new proposal.");
+    const text = `${result.stdout}\n${result.stderr}`.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, "");
+    const sites = [...text.matchAll(/^\s*Site:\s*(\S+)\s*$/gm)];
+    const accounts = [...text.matchAll(/^\s*Email:\s*(\S+)\s*$/gm)];
+    if (sites.length !== 1 || accounts.length !== 1 || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(sites[0]![1]!)) {
+      throw new JiraToolError("invalid-response", "ACLI did not identify one active Jira site and account.");
+    }
+    return { site: sites[0]![1]!.toLowerCase(), account: accounts[0]![1]! };
   }
 
   async comments(issueKey: string, limit = DEFAULT_COMMENT_LIMIT, signal?: AbortSignal): Promise<JiraCommentsResult> {
@@ -176,6 +238,7 @@ export class JiraCliAdapter implements JiraReadPort {
   }
 
   private async runRaw(args: string[], signal: AbortSignal | undefined, operation: string): Promise<JiraCommandResult> {
+    if (signal?.aborted) throw new JiraToolError("timeout", "Jira operation cancelled before command execution.");
     try {
       return await this.runCommand(args, { signal, timeoutMs: this.timeoutMs });
     } catch (error) {

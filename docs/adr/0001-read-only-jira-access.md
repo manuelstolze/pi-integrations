@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: ADR-0010
 last_reviewed: "2026-10-06 — valid"
 ---
 
