@@ -4,6 +4,10 @@ Thank you for contributing to `pi-integrations`. This repository is a monorepo f
 
 Read [the engineering constitution](./CONSTITUTION.md) before contributing. It defines mandatory repository-wide rules.
 
+Read [the glossary map](./GLOSSARY-MAP.md) for shared and package terms. Follow
+[domain documentation guidance](./docs/agents/domain.md) for the location of vocabulary,
+behavior rules, and architecture decisions.
+
 ## Scope and change discipline
 
 - Keep changes small, focused, and easy to review.
@@ -86,9 +90,11 @@ Each extension package should:
 
 - export a default `ExtensionFactory` from its compiled entry point;
 - list its compiled entry point in the `pi.extensions` field in `package.json`;
-- declare `@earendil-works/pi-coding-agent` as a `peerDependency`;
+- declare `@earendil-works/pi-coding-agent` as a `peerDependency` with range `>=1.3.0 <2` and a development dependency with range `^1.3.0`;
 - include a README with installation, usage, and development instructions; and
 - include tests for its user-facing behavior when practical.
+
+Packages that directly use `@earendil-works/pi-tui` must declare it with the same peer and development dependency ranges. Pi and Pi TUI versions below 1.3.0 are not supported.
 
 Use [`packages/hello-world`](./packages/hello-world) as the small reference package and template for new extensions. Keep package-specific code, tests, and documentation inside that package directory.
 

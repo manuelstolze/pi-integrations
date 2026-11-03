@@ -43,8 +43,8 @@ Always read:
   the changed files.
 - [Contributing](../../../../CONTRIBUTING.md) for package, test, Git, and release rules.
 
-For package changes, read the [context map](../../../../CONTEXT-MAP.md), repository `CONTEXT.md`,
-and affected package `CONTEXT.md` and README files. Follow
+For package changes, read the [glossary map](../../../../GLOSSARY-MAP.md), repository `GLOSSARY.md`,
+and affected package `GLOSSARY.md` and README files. Follow
 [domain documentation guidance](../../../../docs/agents/domain.md).
 
 For imports, package structure, or outside-system access, read
@@ -69,7 +69,7 @@ Check each changed file against the applicable concerns:
 | Package boundaries | Independent packages; package rules separate from Pi, process, and provider code; documented import direction |
 | Error handling | Lost error causes, silent failures, or unsafe fallback behavior |
 | Tests | Coverage of changed behavior and error paths; assertions that check visible results |
-| Documentation and releases | Changed setup or usage, context and ADR updates, and required Changesets (files that describe package changes and version bumps) |
+| Documentation and releases | Changed setup or usage, glossary, rule document, and ADR updates, and required Changesets (files that describe package changes and version bumps) |
 
 When reviewing your own work, check assumptions again. For another author's work, inspect relevant
 Git history before calling an unfamiliar choice a defect. Search for real callers before claiming

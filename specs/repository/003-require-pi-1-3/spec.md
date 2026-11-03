@@ -51,7 +51,7 @@ Pi TUI supplies terminal interface components. The model-warning and permission-
 - **FR-003:** Model-warning and permission-gate MUST declare `@earendil-works/pi-tui` as a peer dependency with range `>=1.3.0 <2`. Their corresponding development dependencies MUST start at 1.3.0 and remain within major version 1.
 - **FR-004:** Dependency declarations and the root lockfile MUST agree. A clean installation from the lockfile MUST succeed and resolve Pi and the directly required Pi TUI packages to supported versions.
 - **FR-005:** All five package READMEs MUST state the new Pi minimum. Model-warning and permission-gate MUST also state the new Pi TUI minimum. The Node.js minimum MUST remain unchanged.
-- **FR-006:** The repository context MUST record the shared minimum. Pi API packages MUST remain host-supplied peer dependencies and local development dependencies, as required by ADR-0008. This version change MUST NOT turn them into bundled runtime dependencies.
+- **FR-006:** `CONTRIBUTING.md` MUST record the shared minimum. Pi API packages MUST remain host-supplied peer dependencies and local development dependencies, as required by ADR-0008. This version change MUST NOT turn them into bundled runtime dependencies.
 - **FR-007:** All existing extension behavior, including the current Herald model settings, MUST remain unchanged. Required builds, type checks, and tests MUST pass against the supported dependency tree, or failures MUST be reported accurately rather than treated as success.
 - **FR-008:** Each affected published package MUST have a Changeset with release level `minor`, as explicitly approved by the owner. A Changeset records the package release level and user-facing change. The note MUST state that Pi versions below 1.3.0 are no longer supported. The two Pi TUI consumers MUST also state their new Pi TUI minimum.
 - **FR-009:** Historical compatibility statements and test results MUST remain identifiable as historical evidence. Current documentation MUST NOT imply that Pi 1.1.x or 1.2.x remains supported.
@@ -79,7 +79,7 @@ Pi TUI supplies terminal interface components. The model-warning and permission-
 
 ## 6. Domain notes
 
-Follow `CONTEXT-MAP.md`, the repository context, and the five package context files.
+Follow `GLOSSARY-MAP.md`, `CONTRIBUTING.md`, and the five package glossary and README files.
 
 Preserve ADR-0008: Pi API packages remain peer and development dependencies. Only the declared supported version range changes. Handle any updated as-built documentation under the process in `docs/adr/README.md`; do not replace the accepted decision.
 

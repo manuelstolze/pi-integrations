@@ -22,7 +22,7 @@ Add the following files under `packages/pi-model-warning/`:
 - `src/index.ts` for the extension factory, event handlers, model matching, and acknowledgement flow.
 - `test/index.test.ts` for matching, event handling, duplicate prevention, acknowledgement, cancellation, and modes without UI.
 - `README.md` with installation, use, and development instructions.
-- `CONTEXT.md` with stable package behavior and event rules.
+- `README.md` with stable package behavior and event rules; `GLOSSARY.md` with package terms.
 
 The workspace already includes every directory matched by `packages/*`. Run `npm install` after adding the package metadata to update the root lockfile. Add a Changeset for the new published package.
 
@@ -37,7 +37,7 @@ The workspace already includes every directory matched by `packages/*`. Run `npm
 
 ## Documentation and architecture records
 
-- Add package-level `CONTEXT.md` and `README.md` files.
+- Add package-level `GLOSSARY.md` and `README.md` files.
 - No root context or ADR change is needed. This package follows existing workspace boundaries and does not change a repository-wide architecture decision.
 - Do not change settings, providers, installer behavior, or other packages.
 

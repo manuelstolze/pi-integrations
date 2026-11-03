@@ -19,7 +19,7 @@ and `tasks.md`, as required by `CONSTITUTION.md`.
 
 - **Current behavior:** <what the relevant source and tests show; cite file paths>
 - **Approved outcome:** <requirements from spec.md that this plan implements>
-- **Context read:** `CONTEXT-MAP.md`, `CONTEXT.md`, <affected package context files>
+- **Context read:** `GLOSSARY-MAP.md`, `GLOSSARY.md`, `CONTRIBUTING.md`, <affected package glossaries and README files>
 - **Applicable decisions:** <architecture decision record (ADR) paths and constraints, or None>
 - **Evidence:** <commands already run, results, and source references>
 - **Assumptions and unknowns:** <unverified points and how to check them>
@@ -62,7 +62,8 @@ List only files needed for this change. Include package manifests and the root
 | Artifact | Required update, or reason no update is needed |
 | --- | --- |
 | Affected package `README.md` | <usage, setup, or compatibility changes> |
-| `CONTEXT.md`, package context, or `CONTEXT-MAP.md` | <changed stable rule or context boundary> |
+| Root or package `GLOSSARY.md`, or `GLOSSARY-MAP.md` | <changed terms or context relationships> |
+| `CONTRIBUTING.md` or package `README.md` | <changed stable rule or behavior> |
 | Public contract documentation | <changed interface and compatibility notes> |
 | ADR | <required decision process, or existing decision preserved> |
 | `.changeset/<name>.md` | <affected package names, version bump, and reason> |

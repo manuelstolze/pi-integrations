@@ -2,6 +2,8 @@
 
 A Pi extension that asks before it runs bash commands that match dangerous patterns. It replaces the permission gate from `pi-guardrails`.
 
+See [the package glossary](./GLOSSARY.md) for permission terms.
+
 ## Compatibility
 
 Requires Node.js 22.19.0 or later, Pi API 1.3.0 or later in the 1.x line, and
@@ -63,6 +65,19 @@ A pattern uses substring matching by default. Set `regex` to `true` to use a Jav
 If the file is missing, the extension uses default settings. If it cannot read or validate the file, it shows a warning, uses built-in dangerous patterns, and leaves the file unchanged.
 
 Auto-deny rules use literal substring matching. They do not parse shell syntax. They can miss commands with different spacing and can match text inside quoted strings. Do not treat this check as a complete shell security boundary.
+
+## Architecture
+
+- Pure command rules do not use Pi APIs or file APIs.
+- The application applies permission rules through ports for configuration, approval, and session approvals.
+- The interface layer handles Pi events, prompts, and session approvals.
+- The infrastructure layer reads and writes `guardrails.json`.
+
+## Package conventions
+
+- The package entry point is `dist/index.js`, declared in `pi.extensions`.
+- Pi and Pi TUI are peer dependencies.
+- Tests cover pattern checks, configuration handling, and command decisions.
 
 ## Development
 

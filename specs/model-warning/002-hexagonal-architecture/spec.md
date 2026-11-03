@@ -23,7 +23,7 @@ Restructure the package to follow the repository's hexagonal architecture. Keep 
 - Separate model-warning rules, warning workflow policy, and Pi-facing behavior into clear responsibilities.
 - Keep package rules and workflow policy independent of Pi and system APIs.
 - Update package tests to verify the responsibilities and dependency boundaries.
-- Update `packages/pi-model-warning/CONTEXT.md` to record the architecture and retained behavior.
+- Update `packages/pi-model-warning/README.md` to record the architecture and retained behavior.
 - Keep the default extension factory and package entry point stable.
 
 ### Out of scope
@@ -42,7 +42,7 @@ Restructure the package to follow the repository's hexagonal architecture. Keep 
 - **FR-005:** Dependencies MUST point inward. Domain code MUST NOT depend on application, Pi, or system APIs. Application code MUST NOT depend on Pi or system APIs.
 - **FR-006:** The package MUST keep the current default extension factory and supported package entry point. Internal rules, workflows, and interfaces MUST NOT become new public APIs.
 - **FR-007:** Tests MUST verify model rules without outside services, workflow decisions with fake outside interfaces, and Pi event and UI behavior through the existing extension contract.
-- **FR-008:** All current user-visible behavior documented in `packages/pi-model-warning/CONTEXT.md` and `specs/model-warning/001-model-warning/spec.md` MUST remain unchanged.
+- **FR-008:** All current user-visible behavior documented in `packages/pi-model-warning/README.md` and `specs/model-warning/001-model-warning/spec.md` MUST remain unchanged.
 
 ## 4. Capability deltas
 
@@ -58,11 +58,11 @@ Restructure the package to follow the repository's hexagonal architecture. Keep 
 - The package has no artificial infrastructure component that does not implement a real outside-system need.
 - The default extension factory and supported package entry point remain unchanged.
 - Existing tests and updated tests show no change to Opus matching, event triggers, duplicate handling, acknowledgement retry behavior, JSON and print behavior, or retained state.
-- `packages/pi-model-warning/CONTEXT.md` describes the new responsibilities and retains the current behavior rules.
+- `packages/pi-model-warning/README.md` describes the new responsibilities and retains the current behavior rules.
 
 ## 6. Domain notes
 
-Use the terms and behavior in `packages/pi-model-warning/CONTEXT.md`. An Opus model has `opus` in its model ID, without letter-case sensitivity and regardless of provider. An acknowledgement confirms that the warning was seen; it does not approve, reject, or change the active model.
+Use the terms in `packages/pi-model-warning/GLOSSARY.md` and the behavior in `packages/pi-model-warning/README.md`. An Opus model has `opus` in its model ID, without letter-case sensitivity and regardless of provider. An acknowledgement confirms that the warning was seen; it does not approve, reject, or change the active model.
 
 Follow [`docs/adr/0005-adopt-hexagonal-ddd-architecture.md`](../../../docs/adr/0005-adopt-hexagonal-ddd-architecture.md) and [`docs/hexagonal-packages.md`](../../../docs/hexagonal-packages.md). The application owns workflow policy, the Pi-facing interface handles Pi events and UI, and infrastructure code exists only when a real outside-system implementation is required.
 
@@ -77,7 +77,7 @@ Follow [`docs/adr/0005-adopt-hexagonal-ddd-architecture.md`](../../../docs/adr/0
 
 ## 8. Open questions
 
-None. The owner approved an architecture-only refactor, unchanged warning behavior and public API, and updates to package context and tests.
+None. The owner approved an architecture-only refactor, unchanged warning behavior and public API, and updates to the package README and tests.
 
 ## 9. Delivery notes
 

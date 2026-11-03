@@ -14,7 +14,7 @@ public API, configuration, and supported host versions unchanged.
 | `package-lock.json` | Regenerate the workspace path records from the root after the move. Do not hand-edit generated lockfile data. |
 | `tsconfig.json` | Point the project reference to `packages/pi-permission-gate`. |
 | `packages/pi-permission-gate/package.json` | Keep `name` and `pi.extensions` unchanged. Set `repository.directory` to `packages/pi-permission-gate`. |
-| `CONTEXT-MAP.md` | Update the package context link to the new directory. |
+| `GLOSSARY-MAP.md` | Update the package glossary link to the new directory. |
 | Current documentation and workspace references | Update active paths and package-facing labels where required. Leave historical specifications, changelogs, and records unchanged when they describe the repository at that time. |
 | `.changeset/` | Add a patch Changeset for `@manuelstolze/pi-permission-gate` that describes the repository directory metadata update. |
 

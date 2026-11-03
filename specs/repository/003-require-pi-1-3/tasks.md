@@ -36,14 +36,14 @@ The repository was on `main` when implementation began. The owner approved creat
 
 - [x] **T03** — Update current compatibility documentation and release notes.
   - **Depends on:** T02.
-  - **Files:** `CONTEXT.md`, all five package `README.md` files, and a new `.changeset/<new-file>.md`.
-  - State the shared Pi minimum of 1.3.0 in the repository context.
+  - **Files:** `CONTRIBUTING.md`, all five package `README.md` files, and a new `.changeset/<new-file>.md`.
+  - State the shared Pi minimum of 1.3.0 in `CONTRIBUTING.md`.
   - Update each package's compatibility section. State the matching Pi TUI minimum in model-warning and permission-gate.
   - Preserve Node.js requirements and Herald configuration instructions. Do not change historical changelogs or prior test evidence.
   - Add one Changeset covering all five packages with release level `minor`, as explicitly requested by the owner. The release-policy exception is recorded in `spec.md`. A Changeset records a future package release and its user-facing changes.
   - Explain that Pi 1.1.x and 1.2.x are no longer supported. Explain the new Pi TUI minimum for its two direct consumers. State that runtime behavior and the Node.js minimum are unchanged.
   - Preserve any existing Changesets. Do not run versioning or publication commands.
-  - **Acceptance gate:** All current compatibility sections and the repository context match the manifests. The new Changeset covers exactly the five affected packages with minor release levels. No historical evidence or Herald instructions are overwritten.
+  - **Acceptance gate:** All current compatibility sections and `CONTRIBUTING.md` match the manifests. The new Changeset covers exactly the five affected packages with minor release levels. No historical evidence or Herald instructions are overwritten.
 
 - [x] **T04** — Record verified supporting facts for ADR-0008.
   - **Depends on:** T02 and T03.

@@ -48,7 +48,7 @@ Keep coverage for current behavior: restore does not create a second model-chang
 
 - Keep the default extension factory, named `isOpusModelId` export, package name, compiled entry point, package metadata, and Pi event contracts unchanged.
 - Keep the warning text and acknowledgement choice unchanged.
-- Update `packages/pi-model-warning/CONTEXT.md` to describe the layer responsibilities and dependency direction. Keep its existing domain terms and behavior rules.
+- Update `packages/pi-model-warning/README.md` to describe the layer responsibilities and dependency direction. Keep its existing behavior rules and the terms in `packages/pi-model-warning/GLOSSARY.md`.
 - Leave the package README and shared architecture documents unchanged.
 - Add a patch changeset for `@manuelstolze/pi-model-warning`. The package's published build changes, but its supported behavior and API do not.
 

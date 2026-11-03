@@ -46,7 +46,7 @@ Update the compatibility sections in:
 - `packages/pi-model-warning/README.md`
 - `packages/pi-permission-gate/README.md`
 
-Record the repository-wide Pi minimum in `CONTEXT.md`. State the Pi TUI minimum for packages that declare it directly. The package-specific context files do not currently state a numerical minimum; do not duplicate the new rule in every context file.
+Record the repository-wide Pi minimum in `CONTRIBUTING.md`. State the Pi TUI minimum for packages that declare it directly. Keep version requirements out of the package glossaries.
 
 Preserve all Herald settings documentation added by GIT-004. Do not rewrite historical package changelogs or prior specifications and test results.
 
@@ -101,7 +101,7 @@ Check every root and package dependency field against the table in section 1. Ve
 
 Check the lockfile's root and workspace declarations against the manifests. Verify that the installed Pi and directly required Pi TUI versions are at least 1.3.0 and below 2.0.0. Confirm there are no invalid peer dependencies.
 
-Confirm that all five compatibility sections and `CONTEXT.md` state the new minimum. A search may still find 1.1.0 in historical changelogs, prior specifications, ADR notes, and package release versions. Do not treat those historical references as stale current requirements.
+Confirm that all five compatibility sections and `CONTRIBUTING.md` state the new minimum. A search may still find 1.1.0 in historical changelogs, prior specifications, ADR notes, and package release versions. Do not treat those historical references as stale current requirements.
 
 Verify that the new Changeset covers all five package names with a minor release. Do not change package release versions during this task.
 

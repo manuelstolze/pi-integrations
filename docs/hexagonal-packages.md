@@ -106,13 +106,12 @@ need them as a supported library API.
 
 ## Git integration example
 
-`packages/git-integration` follows the inward dependency rule, but its current
-source groups outside code under `adapters/`. Move those files into
-`infrastructure/` and `interface/` when that package is next changed.
+`packages/git-integration` follows the inward dependency rule. Its source uses
+separate `domain/`, `application/`, `infrastructure/`, and `interface/` folders.
 
 - The domain owns `GitMode`, `HostingProvider`, and the origin-host hint rule.
 - The application prepares one mode-aware Herald run through Git and hosting
   ports.
-- Git, GitHub, GitLab, and process code belong in `infrastructure/`; Pi code
-  belongs in `interface/`.
+- Git, GitHub, GitLab, process, and settings file access code are in
+  `infrastructure/`. Pi code is in `interface/`.
 - The entry point connects the layers and exports the Pi extension.
