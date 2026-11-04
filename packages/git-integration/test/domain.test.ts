@@ -15,13 +15,16 @@ describe("providerHintFromOriginUrl", () => {
 });
 
 describe("selectGitLabTargetBranch", () => {
-  it("prefers develop, then main, then master", () => {
-    expect(selectGitLabTargetBranch({ develop: true, main: true, master: true })).toBe("develop");
-    expect(selectGitLabTargetBranch({ develop: false, main: true, master: true })).toBe("main");
-    expect(selectGitLabTargetBranch({ develop: false, main: false, master: true })).toBe("master");
-  });
-
-  it("returns null when no fallback branch exists", () => {
-    expect(selectGitLabTargetBranch({ develop: false, main: false, master: false })).toBeNull();
+  it.each([
+    [[], null],
+    [["master"], "master"],
+    [["main"], "main"],
+    [["main", "master"], "main"],
+    [["develop"], "develop"],
+    [["develop", "master"], "develop"],
+    [["develop", "main"], "develop"],
+    [["develop", "main", "master"], "develop"],
+  ])("selects the first available branch from %o", (available, expected) => {
+    expect(selectGitLabTargetBranch(available)).toBe(expected);
   });
 });

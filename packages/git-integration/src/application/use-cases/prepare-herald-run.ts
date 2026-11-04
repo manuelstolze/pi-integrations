@@ -1,6 +1,6 @@
 import { providerHintFromOriginUrl, type HostingProvider } from "../../domain/hosting-provider.js";
 import type { GitMode } from "../../domain/git-mode.js";
-import { selectGitLabTargetBranch } from "../../domain/rules.js";
+import { gitLabFallbackBranches, selectGitLabTargetBranch } from "../../domain/rules.js";
 import { errorMessage, HeraldError } from "../errors.js";
 import type { GitRepositoryPort, RepositorySnapshot } from "../ports/git-repository-port.js";
 import type { HostingProviderPort } from "../ports/hosting-provider-port.js";
@@ -110,12 +110,11 @@ async function selectTargetBranch(
     return branch ? { branch, baseRef: `origin/${branch}` } : null;
   }
 
-  const [develop, main, master] = await Promise.all([
-    git.refExists("origin/develop"),
-    git.refExists("origin/main"),
-    git.refExists("origin/master"),
-  ]);
-  const branch = selectGitLabTargetBranch({ develop, main, master });
+  const checks = await Promise.all(
+    gitLabFallbackBranches.map((branch) => git.refExists(`origin/${branch}`)),
+  );
+  const available = gitLabFallbackBranches.filter((_branch, index) => checks[index]);
+  const branch = selectGitLabTargetBranch(available);
   return branch ? { branch, baseRef: `origin/${branch}` } : null;
 }
 
