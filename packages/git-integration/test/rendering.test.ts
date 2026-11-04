@@ -44,6 +44,13 @@ describe("Pi renderers", () => {
     expect(renderGitIntegrationInstructions("github")).not.toContain("glab mr create");
   });
 
+  it("keeps GitLab fallback order and repository policy instructions", () => {
+    const text = renderGitIntegrationInstructions("gitlab");
+    expect(text).toContain("- If CONTRIBUTING.md names a target branch, use it.\n- For GitLab, otherwise use `develop` when it exists, then `main`, then `master`.");
+    expect(text).toContain("Use the fallback rules below only for topics that CONTRIBUTING.md does not address.");
+    expect(text).toContain("The request diff in the task is preliminary when repository policy may select another target.\n  Verify the final target branch and inspect its diff before creating the merge request.");
+  });
+
   it("renders an unresolved request target without inventing a branch", () => {
     const run: PreparedHeraldRun = {
       mode: "request",

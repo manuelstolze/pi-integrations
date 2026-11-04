@@ -32,17 +32,19 @@ function fakeHosting(overrides: Partial<HostingProviderPort> = {}): HostingProvi
 
 describe("prepareHeraldRun", () => {
   it("prepares commit mode without resolving a hosting provider", async () => {
-    const hosting = fakeHosting({
-      resolve: async () => {
-        throw new Error("hosting should not be used");
-      },
-    });
+    const originUrl = vi.fn(async () => { throw new Error("origin should not be used"); });
+    const resolve = vi.fn(async () => { throw new Error("hosting should not be used"); });
+    const defaultBranch = vi.fn(async () => { throw new Error("hosting should not be used"); });
+    const hosting = fakeHosting({ resolve, defaultBranch });
 
-    await expect(prepareHeraldRun({ mode: "commit", git: fakeGit(), hosting })).resolves.toEqual({
+    await expect(prepareHeraldRun({ mode: "commit", git: fakeGit({ originUrl }), hosting })).resolves.toEqual({
       mode: "commit",
       provider: null,
       snapshot,
     });
+    expect(originUrl).not.toHaveBeenCalled();
+    expect(resolve).not.toHaveBeenCalled();
+    expect(defaultBranch).not.toHaveBeenCalled();
   });
 
   it("prepares a full GitLab run with a resolved provider", async () => {
@@ -93,28 +95,86 @@ describe("prepareHeraldRun", () => {
     expect(collect).not.toHaveBeenCalled();
   });
 
-  it("uses GitLab develop before other fallback branches", async () => {
-    await expect(prepareHeraldRun({ mode: "request", git: fakeGit(), hosting: fakeHosting() })).resolves.toEqual({
+  it.each([
+    [[], null],
+    [["master"], "master"],
+    [["main"], "main"],
+    [["main", "master"], "main"],
+    [["develop"], "develop"],
+    [["develop", "master"], "develop"],
+    [["develop", "main"], "develop"],
+    [["develop", "main", "master"], "develop"],
+  ])("prepares the first available GitLab target from %o", async (available, target) => {
+    const refExists = vi.fn(async (ref: string) => available.some((branch) => ref === `origin/${branch}`));
+    const diffAgainst = vi.fn(async (ref: string) => `diff against ${ref}`);
+    const result = await prepareHeraldRun({
+      mode: "request",
+      git: fakeGit({ refExists, diffAgainst }),
+      hosting: fakeHosting(),
+    });
+
+    expect(refExists.mock.calls.map(([ref]) => ref)).toEqual(["origin/develop", "origin/main", "origin/master"]);
+    expect(result).toEqual({
       mode: "request",
       provider: "gitlab",
       snapshot,
-      targetBranch: "develop",
-      diff: {
-        kind: "available",
-        baseRef: "origin/develop",
-        text: "diff against origin/develop",
-      },
+      targetBranch: target,
+      diff: target
+        ? { kind: "available", baseRef: `origin/${target}`, text: `diff against origin/${target}` }
+        : { kind: "no-target" },
     });
+    if (target) {
+      expect(diffAgainst).toHaveBeenCalledExactlyOnceWith(`origin/${target}`);
+    } else {
+      expect(diffAgainst).not.toHaveBeenCalled();
+    }
+  });
+
+  it("starts every GitLab branch check before any check completes", async () => {
+    const releases: Array<(value: boolean) => void> = [];
+    const refExists = vi.fn((_ref: string) => new Promise<boolean>((resolve) => releases.push(resolve)));
+    const run = prepareHeraldRun({ mode: "request", git: fakeGit({ refExists }), hosting: fakeHosting() });
+
+    try {
+      await vi.waitFor(() => expect(refExists).toHaveBeenCalledTimes(3));
+      expect(refExists.mock.calls.map(([ref]) => ref)).toEqual(["origin/develop", "origin/main", "origin/master"]);
+    } finally {
+      // A sequential implementation can start its next check only after the previous release.
+      // Resolve future checks too, so the run cannot remain pending after a failed assertion.
+      refExists.mockImplementation(async () => false);
+      for (const release of releases) release(false);
+      await run;
+    }
+  });
+
+  it("propagates a failed GitLab branch check", async () => {
+    const failure = new Error("branch check failed");
+    const refExists = vi.fn(async (ref: string) => {
+      if (ref === "origin/main") throw failure;
+      return false;
+    });
+    const diffAgainst = vi.fn(async () => "diff");
+    await expect(prepareHeraldRun({
+      mode: "request",
+      git: fakeGit({ refExists, diffAgainst }),
+      hosting: fakeHosting(),
+    })).rejects.toBe(failure);
+    expect(refExists.mock.calls.map(([ref]) => ref)).toEqual(["origin/develop", "origin/main", "origin/master"]);
+    expect(diffAgainst).not.toHaveBeenCalled();
   });
 
   it("uses the GitHub default branch for request mode", async () => {
+    const refExists = vi.fn(async () => false);
+    const diffAgainst = vi.fn(async (ref: string) => `diff against ${ref}`);
     const git = fakeGit({
       originUrl: async () => "https://github.com/owner/repo.git",
-      refExists: async () => false,
+      refExists,
+      diffAgainst,
     });
+    const defaultBranch = vi.fn(async () => "trunk");
     const hosting = fakeHosting({
       resolve: async (_origin, hint) => hint ?? "gitlab",
-      defaultBranch: async () => "trunk",
+      defaultBranch,
     });
 
     await expect(prepareHeraldRun({ mode: "request", git, hosting })).resolves.toMatchObject({
@@ -126,6 +186,9 @@ describe("prepareHeraldRun", () => {
         baseRef: "origin/trunk",
       },
     });
+    expect(defaultBranch).toHaveBeenCalledExactlyOnceWith("github");
+    expect(refExists).not.toHaveBeenCalled();
+    expect(diffAgainst).toHaveBeenCalledExactlyOnceWith("origin/trunk");
   });
 
   it("reports a missing origin before provider resolution", async () => {

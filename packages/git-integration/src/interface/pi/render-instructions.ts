@@ -1,4 +1,5 @@
 import type { HostingProvider } from "../../domain/hosting-provider.js";
+import { gitLabFallbackBranches } from "../../domain/rules.js";
 
 export function renderGitIntegrationInstructions(provider: HostingProvider | null): string {
   const providerName = provider === "github" ? "GitHub" : provider === "gitlab" ? "GitLab" : "the selected hosting provider";
@@ -92,7 +93,7 @@ Wait for explicit approval.
 ### Step 8 — Select the target branch
 
 - If CONTRIBUTING.md names a target branch, use it.
-- For GitLab, otherwise use \`develop\` when it exists, then \`main\`, then \`master\`.
+- For GitLab, otherwise use \`${gitLabFallbackBranches[0]}\` when it exists, then \`${gitLabFallbackBranches[1]}\`, then \`${gitLabFallbackBranches[2]}\`.
 - For GitHub, otherwise use \`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name\`.
 - Do not silently use a provider other than ${providerName}.
 

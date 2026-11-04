@@ -1,12 +1,5 @@
-export interface GitLabBranchAvailability {
-  develop: boolean;
-  main: boolean;
-  master: boolean;
-}
+export const gitLabFallbackBranches = ["develop", "main", "master"] as const;
 
-export function selectGitLabTargetBranch(available: GitLabBranchAvailability): string | null {
-  if (available.develop) return "develop";
-  if (available.main) return "main";
-  if (available.master) return "master";
-  return null;
+export function selectGitLabTargetBranch(available: readonly string[]): string | null {
+  return gitLabFallbackBranches.find((branch) => available.includes(branch)) ?? null;
 }
