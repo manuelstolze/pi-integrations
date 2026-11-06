@@ -1,6 +1,6 @@
 {
   "name": "@manuelstolze/pi-jira-integration",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Pi extension for Jira reads and approved description updates.",
   "type": "module",
   "license": "MIT",
