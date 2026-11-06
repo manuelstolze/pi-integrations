@@ -17,6 +17,15 @@ describe("ExecProcessRunner", () => {
     });
   });
 
+  it("preserves NUL-delimited output when raw output is requested", async () => {
+    const exec = vi.fn(async () => ({ stdout: "file with space.txt\0", stderr: " warning\n", code: 0 }));
+    const runner = new ExecProcessRunner(exec, "/worktree");
+
+    await expect(runner.run("git", ["diff"], { trimOutput: false })).resolves.toEqual({
+      stdout: "file with space.txt\0", stderr: " warning\n", code: 0,
+    });
+  });
+
   it("maps process errors to a failed result", async () => {
     const exec = vi.fn(async () => {
       throw new Error("spawn failed");
