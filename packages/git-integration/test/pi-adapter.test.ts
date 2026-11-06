@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { registerGitIntegration } from "../src/interface/pi/extension.js";
-import type { GitRepositoryPort } from "../src/application/ports/git-repository-port.js";
-import type { HostingProviderPort } from "../src/application/ports/hosting-provider-port.js";
+import type { HeraldAdapters } from "../src/interface/pi/extension.js";
 import { createPiHarness } from "./helpers/pi-harness.js";
 
-function fakeAdapters(): { git: GitRepositoryPort; hosting: HostingProviderPort } {
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function fakeAdapters(): HeraldAdapters {
   return {
     git: {
       isRepository: vi.fn(async () => true),
@@ -24,19 +27,100 @@ function fakeAdapters(): { git: GitRepositoryPort; hosting: HostingProviderPort 
       resolve: vi.fn(async () => "github"),
       defaultBranch: vi.fn(async () => "main"),
     },
+    commitInputChecks: {
+      prepare: async (draft) => ({ ok: true, proposal: {
+        stage: "commit", commits: draft.commits.map((commit) => ({
+          ...commit,
+          command: `git add -- ${commit.files.map((file) => shellQuote(`:(literal)${file}`)).join(" ")} && git commit -m ${shellQuote(commit.message)}`,
+          inputSnapshot: "commit-test-snapshot",
+        })),
+      } }),
+      verify: async () => ({ ok: true }),
+    },
+    requestInputChecks: (provider) => ({
+      prepare: async (draft) => {
+        const descriptionArg = draft.descriptionInput.kind === "file"
+          ? provider === "github" ? `--body-file ${shellQuote(draft.descriptionInput.path)}` : `--description-file ${shellQuote(draft.descriptionInput.path)}`
+          : provider === "github" ? `--body ${shellQuote(draft.description)}` : `--description ${shellQuote(draft.description)}`;
+        const pushAlreadyCompleted = draft.pushAlreadyCompleted ?? false;
+        const commands = pushAlreadyCompleted ? [] : [{
+          action: "push" as const,
+          command: `git push origin ${shellQuote(`${draft.sourceBranch}:${draft.sourceBranch}`)}`,
+          inputSnapshot: "push-test-snapshot",
+        }];
+        commands.push({
+          action: "create" as const,
+          command: provider === "github"
+            ? `gh pr create --base ${shellQuote(draft.targetBranch)} --head ${shellQuote(draft.sourceBranch)} --title ${shellQuote(draft.title)} ${descriptionArg}`
+            : `glab mr create --source-branch ${shellQuote(draft.sourceBranch)} --target-branch ${shellQuote(draft.targetBranch)} --title ${shellQuote(draft.title)} ${descriptionArg} --remove-source-branch --yes`,
+          inputSnapshot: "request-test-snapshot",
+        });
+        return { ok: true, proposal: { ...draft, pushAlreadyCompleted, commands } };
+      },
+      verify: async () => ({ ok: true }),
+    }),
   };
 }
 
+type ApprovalHarness = ReturnType<typeof createPiHarness> & { adapters: HeraldAdapters };
+
 function createHarness() {
   const h = createPiHarness();
-  registerGitIntegration(h.api, () => fakeAdapters());
+  const adapters = fakeAdapters();
+  let callId = 0;
+  registerGitIntegration(h.api, () => adapters);
   return {
     ...h,
+    adapters,
     start: (mode: string) => h.start(mode === "full" ? "" : mode),
-    callTool: (command: string, ctx: any) => h.emit("tool_call", {
-      toolName: "bash", input: { command },
+    callTool: (command: string, ctx: any = h.ctx, toolCallId = `bash-${++callId}`) => h.emit("tool_call", {
+      toolCallId, toolName: "bash", input: { command },
     }, ctx),
   };
+}
+
+async function approveCommitProposal(h: ApprovalHarness) {
+  const draft = { stage: "commit" as const, commits: [{ message: "Add example", files: ["src/example.ts"] }] };
+  const prepared = await h.adapters.commitInputChecks.prepare(draft);
+  if (!prepared.ok) throw new Error(prepared.reason);
+  const result = await h.tools.get("herald_propose_commits").execute("proposal", { commits: draft.commits }, undefined, undefined, h.ctx);
+  if (result.isError) throw new Error(String(result.content?.[0]?.text ?? "Commit proposal failed"));
+  await h.emit("agent_settled", { aborted: false });
+  const replyText = "Yes, approve the proposal.";
+  await h.emit("input", { text: replyText, source: "interactive" });
+  const report = await h.tools.get("herald_report_reply").execute("report", {
+    proposalId: result.details.proposalId, replyText, assessment: "unconditional-approval",
+  }, undefined, undefined, h.ctx);
+  if (report.isError || !report.details?.approved) throw new Error(String(report.content?.[0]?.text ?? "Reply was not approved"));
+  return { proposalId: result.details.proposalId as string, proposal: prepared.proposal };
+}
+
+async function approveRequestProposal(h: ApprovalHarness, pushAlreadyCompleted = false) {
+  const draft = {
+    stage: "request" as const,
+    provider: "github" as const,
+    sourceBranch: "feature/example",
+    targetBranch: "main",
+    title: "Add example",
+    description: "Review the example change.",
+    descriptionInput: { kind: "inline" as const },
+    pushAlreadyCompleted,
+  };
+  const checks = h.adapters.requestInputChecks("github");
+  const prepared = await checks.prepare(draft);
+  if (!prepared.ok) throw new Error(prepared.reason);
+  const result = await h.tools.get("herald_propose_request").execute("request-proposal", {
+    sourceBranch: draft.sourceBranch, targetBranch: draft.targetBranch, title: draft.title, description: draft.description,
+  }, undefined, undefined, h.ctx);
+  if (result.isError) throw new Error(String(result.content?.[0]?.text ?? "Request proposal failed"));
+  await h.emit("agent_settled", { aborted: false });
+  const replyText = "Yes, approve the request proposal.";
+  await h.emit("input", { text: replyText, source: "interactive" });
+  const report = await h.tools.get("herald_report_reply").execute("request-report", {
+    proposalId: result.details.proposalId, replyText, assessment: "unconditional-approval",
+  }, undefined, undefined, h.ctx);
+  if (report.isError || !report.details?.approved) throw new Error(String(report.content?.[0]?.text ?? "Reply was not approved"));
+  return { proposalId: result.details.proposalId as string, proposal: prepared.proposal };
 }
 
 describe("Pi Git integration adapter", () => {
@@ -52,56 +136,181 @@ describe("Pi Git integration adapter", () => {
   });
 
   it.each([
-    { mode: "commit", command: "git commit -m test", allowed: true },
-    { mode: "commit", command: "git push origin HEAD", allowed: false },
-    { mode: "commit", command: "gh pr create --title test", allowed: false },
-    { mode: "commit", command: "glab mr create --title test", allowed: false },
-    { mode: "request", command: "git commit -m test", allowed: false },
-    { mode: "request", command: "git push origin HEAD", allowed: true },
-    { mode: "request", command: "gh pr create --title test", allowed: true },
-    { mode: "request", command: "glab mr create --title test", allowed: true },
-    { mode: "full", command: "git commit -m test", allowed: true },
-    { mode: "full", command: "git push origin HEAD", allowed: true },
-    { mode: "full", command: "gh pr create --title test", allowed: true },
-    { mode: "full", command: "glab mr create --title test", allowed: true },
-  ])("$mode mode handles $command", async ({ mode, command, allowed }) => {
+    { mode: "commit", action: "commit", allowed: true },
+    { mode: "commit", action: "push", allowed: false },
+    { mode: "commit", action: "create", allowed: false },
+    { mode: "request", action: "commit", allowed: false },
+    { mode: "request", action: "push", allowed: true },
+    { mode: "request", action: "create", allowed: true },
+    { mode: "full", action: "commit", allowed: true },
+    { mode: "full", action: "push", allowed: true },
+    { mode: "full", action: "create", allowed: true },
+  ] as const)("$mode mode checks the approved $action command without a dialog", async ({ mode, action, allowed }) => {
     const harness = createHarness();
     await harness.start(mode);
-    const confirm = vi.fn(async () => true);
+    let command = action === "commit" ? "git commit -m unapproved"
+      : action === "push" ? "git push origin HEAD"
+        : "gh pr create --title unapproved";
 
-    const result = await harness.callTool(command, { hasUI: true, ui: { confirm } });
-
-    if (allowed) {
-      expect(result).toBeUndefined();
-      expect(confirm).toHaveBeenCalledOnce();
-      expect(confirm.mock.calls[0][1]).toContain(command);
-    } else {
-      expect(result).toMatchObject({ block: true });
-      expect(confirm).not.toHaveBeenCalled();
+    if (allowed && action === "commit") {
+      const prepared = await approveCommitProposal(harness);
+      command = prepared.proposal.commits[0].command;
+    } else if (allowed) {
+      const prepared = await approveRequestProposal(harness);
+      if (action === "push") {
+        command = prepared.proposal.commands.find((item) => item.action === "push")!.command;
+      } else {
+        const push = prepared.proposal.commands.find((item) => item.action === "push");
+        if (push) {
+          const pushId = `push-before-create-${mode}`;
+          expect(await harness.callTool(push.command, harness.ctx, pushId)).toBeUndefined();
+          await harness.emit("tool_execution_end", { toolCallId: pushId, toolName: "bash", isError: false, result: {} });
+        }
+        command = prepared.proposal.commands.find((item) => item.action === "create")!.command;
+      }
     }
+
+    const callId = `matrix-${mode}-${action}`;
+    const result = await harness.callTool(command, harness.ctx, callId);
+    if (!allowed) {
+      expect(result).toMatchObject({ block: true });
+    } else {
+      expect(result).toBeUndefined();
+      await harness.emit("tool_execution_end", { toolCallId: callId, toolName: "bash", isError: false, result: {} });
+    }
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 
-  it("blocks a mixed command when one action is not allowed", async () => {
+  it("blocks mixed and non-matching commands after a proposal is approved", async () => {
     const harness = createHarness();
     await harness.start("commit");
-    const confirm = vi.fn(async () => true);
+    const prepared = await approveCommitProposal(harness);
+    const exact = prepared.proposal.commits[0].command;
 
-    const result = await harness.callTool("git commit -m test && git push origin HEAD", {
-      hasUI: true,
-      ui: { confirm },
-    });
-
-    expect(result).toMatchObject({ block: true });
-    expect(confirm).not.toHaveBeenCalled();
+    expect(await harness.callTool(`${exact} && git push origin HEAD`)).toMatchObject({ block: true });
+    expect(await harness.callTool("git commit -m a different message")).toMatchObject({ block: true });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 
-  it("blocks an allowed action when the tool call has no UI", async () => {
+  it("blocks an approved command when no user interface is available", async () => {
+    const harness = createHarness();
+    await harness.start("commit");
+    const prepared = await approveCommitProposal(harness);
+    const result = await harness.callTool(prepared.proposal.commits[0].command, { ...harness.ctx, hasUI: false });
+    expect(result).toMatchObject({ block: true });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+
+  it("blocks changed inputs before dispatch and does not retry the same attempt", async () => {
+    const harness = createHarness();
+    await harness.start("commit");
+    const prepared = await approveCommitProposal(harness);
+    const verify = vi.fn(async () => ({ ok: false as const, reason: "The approved file changed." }));
+    harness.adapters.commitInputChecks.verify = verify;
+
+    const result = await harness.callTool(prepared.proposal.commits[0].command);
+    expect(result).toMatchObject({ block: true, reason: "The approved file changed." });
+    expect(verify).toHaveBeenCalledOnce();
+    expect(await harness.callTool(prepared.proposal.commits[0].command)).toMatchObject({ block: true });
+    expect(verify).toHaveBeenCalledOnce();
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+
+  it("reserves one command attempt and blocks parallel or repeated calls", async () => {
+    const harness = createHarness();
+    await harness.start("commit");
+    const prepared = await approveCommitProposal(harness);
+    let release!: (result: { ok: true }) => void;
+    const verify = vi.fn(() => new Promise<{ ok: true }>((resolve) => { release = resolve; }));
+    harness.adapters.commitInputChecks.verify = verify;
+
+    const firstCall = harness.callTool(prepared.proposal.commits[0].command, harness.ctx, "parallel-first");
+    await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+    await expect(harness.callTool(prepared.proposal.commits[0].command, harness.ctx, "parallel-second"))
+      .resolves.toMatchObject({ block: true });
+    release({ ok: true });
+    await expect(firstCall).resolves.toBeUndefined();
+    await harness.emit("tool_execution_end", {
+      toolCallId: "parallel-first", toolName: "bash", isError: false, result: {},
+    });
+    await expect(harness.callTool(prepared.proposal.commits[0].command, harness.ctx, "repeat"))
+      .resolves.toMatchObject({ block: true });
+    expect(verify).toHaveBeenCalledOnce();
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+
+  it("requires request-stage approval, blocks a failed push retry, and keeps the terminal failure", async () => {
+    const harness = createHarness();
+    await harness.start("request");
+    const prepared = await approveRequestProposal(harness);
+    const push = prepared.proposal.commands.find((command) => command.action === "push")!;
+    const result = await harness.callTool(push.command, harness.ctx, "failed-push");
+    expect(result).toBeUndefined();
+    await harness.emit("tool_execution_end", {
+      toolCallId: "failed-push", toolName: "bash", isError: true, result: { content: [{ type: "text", text: "push failed" }] },
+    });
+    expect(await harness.callTool(push.command, harness.ctx, "push-retry")).toMatchObject({ block: true });
+    expect(await harness.callTool(prepared.proposal.commands.find((command) => command.action === "create")!.command))
+      .toMatchObject({ block: true, reason: expect.stringContaining("result") });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+
+  it("does not repeat a successful push when a revised request proposal is made", async () => {
     const harness = createHarness();
     await harness.start("full");
+    const first = await approveRequestProposal(harness);
+    const push = first.proposal.commands.find((command) => command.action === "push")!;
+    expect(await harness.callTool(push.command, harness.ctx, "push-once")).toBeUndefined();
+    await harness.emit("tool_execution_end", {
+      toolCallId: "push-once", toolName: "bash", isError: false, result: {},
+    });
 
-    const result = await harness.callTool("git commit -m test", { hasUI: false });
+    await harness.emit("input", { text: "Change the request title.", source: "interactive" });
+    const revised = await harness.tools.get("herald_propose_request").execute("revised-request", {
+      sourceBranch: "feature/example", targetBranch: "main", title: "Revised title",
+      description: "Review the revised change.",
+    }, undefined, undefined, harness.ctx);
+    expect(revised.isError).toBeUndefined();
+    expect(harness.api.sendMessage.mock.calls.at(-1)?.[0].content).not.toContain("git push origin");
+    await harness.emit("agent_settled", { aborted: false });
+    const replyText = "Yes, create the revised request.";
+    await harness.emit("input", { text: replyText, source: "interactive" });
+    const report = await harness.tools.get("herald_report_reply").execute("revised-report", {
+      proposalId: revised.details.proposalId, replyText, assessment: "unconditional-approval",
+    }, undefined, undefined, harness.ctx);
+    expect(report.details).toMatchObject({ approved: true });
 
-    expect(result).toMatchObject({ block: true });
+    const create = revised.details.commands[0] as string;
+    expect(revised.content[0].text).toContain(create);
+    expect(await harness.callTool(create, harness.ctx, "create-only")).toBeUndefined();
+    await harness.emit("tool_execution_end", {
+      toolCallId: "create-only", toolName: "bash", isError: false, result: {},
+    });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+
+  it("ignores a late tool result after cancellation and does not carry its approval into a new run", async () => {
+    const harness = createHarness();
+    await harness.start("commit");
+    const prepared = await approveCommitProposal(harness);
+    const command = prepared.proposal.commits[0].command;
+    const toolCallId = "late-result";
+    expect(await harness.callTool(command, harness.ctx, toolCallId)).toBeUndefined();
+    await harness.start("cancel");
+    await harness.emit("tool_execution_end", { toolCallId, toolName: "bash", isError: false, result: {} });
+
+    await harness.start("commit");
+    expect(await harness.callTool(command)).toMatchObject({ block: true });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+
+  it("blocks a detected action from a stale session", async () => {
+    const harness = createHarness();
+    await harness.start("commit");
+    const prepared = await approveCommitProposal(harness);
+    const wrongSession = { ...harness.ctx, sessionManager: { getSessionId: () => "replacement-session" } };
+    expect(await harness.callTool(prepared.proposal.commits[0].command, wrongSession)).toMatchObject({ block: true });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 
   it("does not carry the mode or provider past explicit workflow completion", async () => {
@@ -137,24 +346,137 @@ describe("Pi Git integration adapter", () => {
     expect(adapters.hosting.resolve).not.toHaveBeenCalled();
   });
 
-  it("blocks a denied commit command while Herald is active", async () => {
-    const { api, commands, ctx, emit } = createPiHarness();
-    const confirm = vi.fn(async () => false);
+  it("blocks a detected command without chat approval and never opens a dialog", async () => {
+    const harness = createHarness();
+    await harness.start("commit");
 
-    registerGitIntegration(api, () => fakeAdapters());
-    await commands.get("herald")!.handler("commit", ctx);
+    const result = await harness.callTool("git commit -m test");
 
-    const result = await emit("tool_call", {
-      type: "tool_call",
-      toolName: "bash",
-      input: { command: "git commit -m test" },
-    }, { hasUI: true, ui: { confirm } });
+    expect(result).toMatchObject({ block: true, reason: expect.stringContaining("no current approved proposal") });
+    expect(harness.ctx.ui.confirm).not.toHaveBeenCalled();
+  });
+});
 
-    expect(confirm).toHaveBeenCalledWith(
-      "Git integration approval required",
-      expect.stringContaining("git commit -m test"),
-    );
-    expect(result).toMatchObject({ block: true });
+describe("Herald proposal and reply tools", () => {
+  it("activates only mode-allowed proposal tools and removes only tools it owns", async () => {
+    const h = createHarness();
+    expect(h.tools.has("herald_propose_commits")).toBe(true);
+    expect(h.api.getActiveTools()).not.toContain("herald_propose_commits");
+    await h.start("commit");
+    expect(h.api.getActiveTools()).toContain("herald_propose_commits");
+    expect(h.api.getActiveTools()).toContain("herald_report_reply");
+    expect(h.api.getActiveTools()).not.toContain("herald_propose_request");
+
+    await h.finish();
+    await h.emit("agent_settled", { aborted: false });
+    expect(h.api.getActiveTools()).toEqual(["read", "bash"]);
+  });
+
+  it("shows a commit proposal and binds approval to a later human reply", async () => {
+    const h = createHarness();
+    await h.start("commit");
+    const propose = h.tools.get("herald_propose_commits");
+    const report = h.tools.get("herald_report_reply");
+    const args = { commits: [{ message: "Add example", files: ["src/example.ts"] }] };
+    const proposalResult = await propose.execute("proposal-call", args, undefined, undefined, h.ctx);
+    const proposalId = proposalResult.details.proposalId as string;
+    const shown = h.api.sendMessage.mock.calls[0][0];
+    expect(shown).toMatchObject({ customType: "herald-proposal", display: true });
+    expect(shown.content).toContain(proposalId);
+    expect(shown.content).toContain("src/example.ts");
+    expect(shown.content).toContain("git commit -m 'Add example'");
+
+    await h.emit("input", { text: "queued before display", source: "interactive", streamingBehavior: "followUp" });
+    await expect(report.execute("early-report", {
+      proposalId, replyText: "queued before display", assessment: "unconditional-approval",
+    }, undefined, undefined, h.ctx)).resolves.toMatchObject({ isError: true });
+    await h.emit("agent_settled", { aborted: false });
+    await h.emit("input", { text: "extension message", source: "extension" });
+    await expect(report.execute("extension-report", {
+      proposalId, replyText: "extension message", assessment: "unconditional-approval",
+    }, undefined, undefined, h.ctx)).resolves.toMatchObject({ isError: true });
+
+    await h.emit("input", { text: "Maybe, if the tests pass.", source: "interactive" });
+    const conditional = await report.execute("conditional-report", {
+      proposalId, replyText: "Maybe, if the tests pass.", assessment: "conditional",
+    }, undefined, undefined, h.ctx);
+    expect(conditional.details).toMatchObject({ approved: false });
+    await expect(report.execute("repeat-report", {
+      proposalId, replyText: "Maybe, if the tests pass.", assessment: "unconditional-approval",
+    }, undefined, undefined, h.ctx)).resolves.toMatchObject({ isError: true });
+
+    await h.emit("input", { text: "Yes, approve the proposal.", source: "rpc" });
+    const approved = await report.execute("approval-report", {
+      proposalId, replyText: "Yes, approve the proposal.", assessment: "unconditional-approval",
+    }, undefined, undefined, h.ctx);
+    expect(approved.details).toMatchObject({ proposalId, approved: true });
+    expect(h.ctx.sessionManager.getSessionId()).toBe("session-1");
+  });
+
+  it("prepares and displays a review-request proposal with its complete description", async () => {
+    const h = createHarness();
+    await h.start("request");
+    const propose = h.tools.get("herald_propose_request");
+    const description = `## Summary
+
+Complete approved description.`;
+    const result = await propose.execute("request-proposal", {
+      sourceBranch: "feature/example", targetBranch: "main", title: "Add example", description,
+      descriptionFile: "request.md",
+    }, undefined, undefined, h.ctx);
+    expect(result.isError).toBeUndefined();
+    expect(h.api.sendMessage).toHaveBeenCalledOnce();
+    const shown = h.api.sendMessage.mock.calls[0][0];
+    expect(shown.content).toContain(description);
+    expect(shown.content).toContain("git push origin");
+    expect(shown.content).toContain("gh pr create");
+    expect(shown.content).toContain("--body-file 'request.md'");
+  });
+
+  it.each(["denial", "conditional", "unclear"] as const)("does not approve a %s reply assessment", async (assessment) => {
+    const h = createHarness();
+    await h.start("commit");
+    const proposal = await h.tools.get("herald_propose_commits").execute("proposal", {
+      commits: [{ message: "Add example", files: ["src/example.ts"] }],
+    }, undefined, undefined, h.ctx);
+    const proposalId = proposal.details.proposalId as string;
+    await h.emit("agent_settled", { aborted: false });
+    await h.emit("input", { text: "A non-approval reply.", source: "interactive" });
+
+    const result = await h.tools.get("herald_report_reply").execute("report", {
+      proposalId, replyText: "A non-approval reply.", assessment,
+    }, undefined, undefined, h.ctx);
+    expect(result.details).toMatchObject({ approved: false });
+  });
+
+  it("rejects invalid proposals, stale proposal reports, and wrong-session tool calls", async () => {
+    const h = createHarness();
+    await h.start("commit");
+    const propose = h.tools.get("herald_propose_commits");
+    const report = h.tools.get("herald_report_reply");
+    await expect(propose.execute("invalid", { commits: [] }, undefined, undefined, h.ctx))
+      .resolves.toMatchObject({ isError: true });
+    expect(h.api.sendMessage).not.toHaveBeenCalled();
+
+    const first = await propose.execute("proposal-1", {
+      commits: [{ message: "Add example", files: ["src/example.ts"] }],
+    }, undefined, undefined, h.ctx);
+    const firstId = first.details.proposalId as string;
+    await h.emit("agent_settled", { aborted: false });
+    const replacement = await propose.execute("proposal-2", {
+      commits: [{ message: "Improve example", files: ["src/example.ts"] }],
+    }, undefined, undefined, h.ctx);
+    const replacementId = replacement.details.proposalId as string;
+    await h.emit("agent_settled", { aborted: false });
+    await h.emit("input", { text: "Yes, approve the revised proposal.", source: "interactive" });
+    await expect(report.execute("stale", {
+      proposalId: firstId, replyText: "Yes, approve the revised proposal.", assessment: "unconditional-approval",
+    }, undefined, undefined, h.ctx)).resolves.toMatchObject({ isError: true });
+
+    const wrongSession = { ...h.ctx, sessionManager: { getSessionId: () => "other-session" } };
+    await expect(report.execute("wrong-session", {
+      proposalId: replacementId, replyText: "Yes, approve the revised proposal.", assessment: "unconditional-approval",
+    }, undefined, undefined, wrongSession)).resolves.toMatchObject({ isError: true });
   });
 });
 
@@ -165,8 +487,9 @@ function configuredHarness() {
   const settings = { read: vi.fn(async () => ({
     sources: [{ path: "/project/.pi/settings.json", value: { herald } }], problems: [],
   })) };
-  registerGitIntegration(harness.api, () => adapters, settings);
-  return { harness, adapters, settings, configure: (value: unknown) => { herald = value; } };
+  const withAdapters = Object.assign(harness, { adapters });
+  registerGitIntegration(withAdapters.api, () => adapters, settings);
+  return { harness: withAdapters, adapters, settings, configure: (value: unknown) => { herald = value; } };
 }
 
 describe("Herald workflow approval", () => {
@@ -195,39 +518,16 @@ describe("Herald workflow approval", () => {
     expect(h.model).toBe(h.herald);
   });
 
-  it.each([false, true])("keeps all mode checks after chat approval, configured: %s", async (configured) => {
-    for (const mode of ["commit", "request", ""] as const) {
-      const setup = configuredHarness();
-      const h = setup.harness;
-      if (!configured) setup.configure({});
-      await h.start(mode);
-      await h.emit("before_agent_start", { systemPrompt: "original" });
-      await h.emit("agent_settled");
-      await h.emit("before_agent_start", { systemPrompt: "original", prompt: "Yes" });
-      for (const [command, allowed] of [
-        ["git commit -m test", mode !== "request"],
-        ["git push origin HEAD", mode !== "commit"],
-        ["gh pr create --title test", mode !== "commit"],
-        ["glab mr create --title test", mode !== "commit"],
-      ] as const) {
-        vi.mocked(h.ctx.ui.confirm).mockClear();
-        const result = await h.emit("tool_call", { toolName: "bash", input: { command } });
-        if (allowed) {
-          expect(result).toBeUndefined();
-          expect(h.ctx.ui.confirm).toHaveBeenCalledWith("Git integration approval required", expect.stringContaining(command));
-        } else {
-          expect(result).toMatchObject({ block: true });
-          expect(h.ctx.ui.confirm).not.toHaveBeenCalled();
-        }
-      }
-      if (mode !== "") {
-        expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git commit -m test && git push" } })).toMatchObject({ block: true });
-      }
-      const allowedCommand = mode === "request" ? "git push" : "git commit -m test";
-      expect(await h.emit("tool_call", { toolName: "bash", input: { command: allowedCommand } }, { hasUI: false })).toMatchObject({ block: true });
-      vi.mocked(h.ctx.ui.confirm).mockResolvedValueOnce(false);
-      expect(await h.emit("tool_call", { toolName: "bash", input: { command: allowedCommand } })).toMatchObject({ block: true });
-    }
+  it.each([false, true])("does not grant command access from a chat reply without a proposal, configured: %s", async (configured) => {
+    const setup = configuredHarness();
+    const h = setup.harness;
+    if (!configured) setup.configure({});
+    await h.start("");
+    await h.emit("agent_settled");
+    await h.emit("input", { text: "Yes, proceed.", source: "interactive" });
+    expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git commit -m test" } })).toMatchObject({ block: true });
+    expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git push origin HEAD" } })).toMatchObject({ block: true });
+    expect(h.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 
   it("retains full mode through the later request approval", async () => {
@@ -327,15 +627,21 @@ describe("Herald cancellation", () => {
     expect(h.ctx.abort).not.toHaveBeenCalled();
   });
 
-  it("does not run a command approved after cancellation", async () => {
-    const { harness: h } = configuredHarness();
+  it("does not dispatch a command when its input check finishes after cancellation", async () => {
+    const { harness: h, adapters } = configuredHarness();
     await h.start();
-    let approve!: (value: boolean) => void;
-    vi.mocked(h.ctx.ui.confirm).mockImplementationOnce(() => new Promise((resolve) => { approve = resolve; }));
-    const command = h.emit("tool_call", { toolName: "bash", input: { command: "git commit -m test" } });
+    const prepared = await approveCommitProposal(h);
+    let release!: (result: { ok: true } | { ok: false; reason: string }) => void;
+    adapters.commitInputChecks.verify = () => new Promise((resolve) => { release = resolve; });
+    const toolCallId = "late-input-check";
+    const command = h.emit("tool_call", {
+      toolCallId, toolName: "bash", input: { command: prepared.proposal.commits[0].command },
+    });
+    await vi.waitFor(() => expect(release).toBeTypeOf("function"));
     await h.start("cancel");
-    approve(true);
+    release({ ok: true });
     expect(await command).toMatchObject({ block: true });
+    expect(h.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 });
 
@@ -390,19 +696,23 @@ describe("Herald final outcomes", () => {
 });
 
 describe("Herald settings lifecycle", () => {
-  it("keeps Herald selections and instructions while waiting for chat approval", async () => {
+  it("keeps Herald selections and instructions while using a chat-approved proposal", async () => {
     const { harness: h } = configuredHarness();
     await h.start();
     const first = await h.emit("before_agent_start", { systemPrompt: "original" });
-    await h.emit("agent_end", { messages: [{ role: "assistant", content: "Should I commit this plan?" }] });
-    await h.emit("agent_settled", { aborted: false });
+    expect(first.systemPrompt).toContain("herald_propose_commits");
     expect(h.model).toBe(h.herald);
     expect(h.thinking).toBe("low");
+
+    const prepared = await approveCommitProposal(h);
     const reply = await h.emit("before_agent_start", { systemPrompt: "original", prompt: "Yes, commit it." });
     expect(reply).toEqual(first);
-    expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git push origin HEAD" } })).toMatchObject({ block: true });
-    expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git commit -m test" } })).toBeUndefined();
-    expect(h.ctx.ui.confirm).toHaveBeenCalledOnce();
+    const toolCallId = "settings-approved-commit";
+    expect(await h.emit("tool_call", {
+      toolCallId, toolName: "bash", input: { command: prepared.proposal.commits[0].command },
+    })).toBeUndefined();
+    await h.emit("tool_execution_end", { toolCallId, toolName: "bash", isError: false, result: {} });
+    expect(h.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 
   it.each(["", "commit", "request"])("applies and restores selections for mode %j", async (mode) => {
@@ -465,12 +775,17 @@ describe("Herald settings lifecycle", () => {
     expect(settings.read).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps mode approval checks while using a configured model", async () => {
+  it("keeps mode limits while using a configured model", async () => {
     const { harness: h } = configuredHarness();
-    await h.start();
+    await h.start("commit");
+    const prepared = await approveCommitProposal(h);
     expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git push origin HEAD" } })).toMatchObject({ block: true });
-    expect(await h.emit("tool_call", { toolName: "bash", input: { command: "git commit -m test" } })).toBeUndefined();
-    expect(h.ctx.ui.confirm).toHaveBeenCalledOnce();
+    const toolCallId = "configured-approved-commit";
+    expect(await h.emit("tool_call", {
+      toolCallId, toolName: "bash", input: { command: prepared.proposal.commits[0].command },
+    })).toBeUndefined();
+    await h.emit("tool_execution_end", { toolCallId, toolName: "bash", isError: false, result: {} });
+    expect(h.ctx.ui.confirm).not.toHaveBeenCalled();
   });
 
   it("prevents overlapping active runs", async () => {
