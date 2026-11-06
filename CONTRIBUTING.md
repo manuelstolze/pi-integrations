@@ -90,11 +90,17 @@ Each extension package should:
 
 - export a default `ExtensionFactory` from its compiled entry point;
 - list its compiled entry point in the `pi.extensions` field in `package.json`;
-- declare `@earendil-works/pi-coding-agent` as a `peerDependency` with range `>=1.3.0 <2` and a development dependency with range `^1.3.0`;
+- declare `@earendil-works/pi-coding-agent` as a `peerDependency` with range
+  `>=1.3.0 <2` and a development dependency with range `^1.3.0`; the Git
+  integration package is the exception and requires `>=1.5.0 <2` with `^1.5.0`;
 - include a README with installation, usage, and development instructions; and
 - include tests for its user-facing behavior when practical.
 
-Packages that directly use `@earendil-works/pi-tui` must declare it with the same peer and development dependency ranges. Pi and Pi TUI versions below 1.3.0 are not supported.
+Packages that directly use `@earendil-works/pi-tui` must declare it with the
+same peer and development dependency ranges as `@earendil-works/pi-coding-agent`.
+Pi and Pi TUI versions below 1.3.0 are not supported generally. The Git
+integration package requires Pi 1.5.0 or later within 1.x. Other packages keep
+their current supported ranges.
 
 Use [`packages/hello-world`](./packages/hello-world) as the small reference package and template for new extensions. Keep package-specific code, tests, and documentation inside that package directory.
 
