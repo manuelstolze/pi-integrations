@@ -29,6 +29,7 @@ export function createPiHarness() {
   const queuedThinking: Array<{ level: HeraldThinkingLevel; previousLevel: HeraldThinkingLevel }> = [];
   let delayThinking = false;
   const notify = vi.fn();
+  let nextToolCallId = 0;
   const ctx = {
     hasUI: true,
     mode: "tui",
@@ -48,7 +49,9 @@ export function createPiHarness() {
 
   async function emit(type: string, event: any = {}, context: any = ctx) {
     let result;
-    for (const handler of handlers.get(type) ?? []) result = await handler({ type, ...event }, context);
+    const normalized = { type, ...event };
+    if (type === "tool_call" && !normalized.toolCallId) normalized.toolCallId = `test-tool-call-${++nextToolCallId}`;
+    for (const handler of handlers.get(type) ?? []) result = await handler(normalized, context);
     return result;
   }
 
@@ -82,6 +85,7 @@ export function createPiHarness() {
     getActiveTools: vi.fn(() => [...activeTools]),
     setActiveTools: vi.fn((names: string[]) => { activeTools = [...names]; }),
     sendUserMessage: vi.fn(),
+    sendMessage: vi.fn(),
     getThinkingLevel: vi.fn(() => thinking),
     setThinkingLevel,
     setModel,
