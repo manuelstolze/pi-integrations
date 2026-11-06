@@ -2,6 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { GitRepositoryPort, RepositorySnapshot } from "../src/application/ports/git-repository-port.js";
 import type { HostingProviderPort } from "../src/application/ports/hosting-provider-port.js";
 import { prepareHeraldRun } from "../src/application/use-cases/prepare-herald-run.js";
+import {
+  checkStageCommandInput, prepareStageProposal,
+} from "../src/application/use-cases/prepare-stage-proposal.js";
+import type {
+  CommitInputCheckPort, CommitStageDraft, PreparedCommitStageProposal,
+  PreparedRequestStageProposal, RequestInputCheckPort, RequestStageDraft,
+} from "../src/application/ports/stage-input-check-ports.js";
 
 const snapshot: RepositorySnapshot = {
   branch: "feature/example",
@@ -10,6 +17,53 @@ const snapshot: RepositorySnapshot = {
   unstagedDiff: "diff --git a/src/example.ts b/src/example.ts",
   recentCommits: "abc123 Add example",
 };
+
+const commitDraft: CommitStageDraft = {
+  stage: "commit",
+  commits: [{ message: "Add example", files: ["src/example.ts"] }],
+};
+const requestDraft: RequestStageDraft = {
+  stage: "request",
+  provider: "github",
+  sourceBranch: "feature/example",
+  targetBranch: "main",
+  title: "Add example",
+  description: "Review the example change.",
+  descriptionInput: { kind: "inline" },
+  pushAlreadyCompleted: false,
+};
+
+const preparedCommit: PreparedCommitStageProposal = {
+  stage: "commit",
+  commits: [{
+    message: "Add example", files: ["src/example.ts"],
+    command: "git commit -m 'Add example'", inputSnapshot: "commit-snapshot-1",
+  }],
+};
+const preparedRequest: PreparedRequestStageProposal = {
+  ...requestDraft,
+  commands: [
+    { action: "push", command: "git push origin feature/example:feature/example", inputSnapshot: "push-snapshot" },
+    { action: "create", command: "gh pr create --base main --head feature/example", inputSnapshot: "request-snapshot" },
+  ],
+};
+
+function fakeCommitChecks(overrides: Partial<CommitInputCheckPort> = {}) {
+  const prepare = vi.fn(async () => ({ ok: true as const, proposal: preparedCommit }));
+  const verify = vi.fn(async () => ({ ok: true as const }));
+  return { port: { prepare, verify, ...overrides }, prepare, verify };
+}
+
+function fakeRequestChecks(overrides: Partial<RequestInputCheckPort> = {}) {
+  const prepare = vi.fn(async (draft: RequestStageDraft) => ({
+    ok: true as const,
+    proposal: draft.pushAlreadyCompleted
+      ? { ...preparedRequest, ...draft, pushAlreadyCompleted: true, commands: [preparedRequest.commands[1]] }
+      : { ...preparedRequest, ...draft, pushAlreadyCompleted: false },
+  }));
+  const verify = vi.fn(async () => ({ ok: true as const }));
+  return { port: { prepare, verify, ...overrides }, prepare, verify };
+}
 
 function fakeGit(overrides: Partial<GitRepositoryPort> = {}): GitRepositoryPort {
   return {
@@ -217,5 +271,107 @@ describe("prepareHeraldRun", () => {
       code: "not-repository",
       message: "Not a git repository.",
     });
+  });
+});
+
+describe("prepareStageProposal", () => {
+  it("prepares explicit commit proposals and checks the exact approved command", async () => {
+    const checks = fakeCommitChecks();
+    const result = await prepareStageProposal({ mode: "full", draft: commitDraft, inputChecks: checks.port });
+    expect(result).toEqual({ ok: true, proposal: preparedCommit });
+    if (!result.ok) throw new Error("Expected a prepared commit proposal");
+
+    await expect(checkStageCommandInput({
+      mode: "full", proposal: result.proposal, commandIndex: 0,
+      command: "git commit -m 'Add example'", inputChecks: checks.port,
+    })).resolves.toEqual({ allowed: true });
+    expect(checks.verify).toHaveBeenCalledExactlyOnceWith(preparedCommit, 0);
+    await expect(checkStageCommandInput({
+      mode: "full", proposal: result.proposal, commandIndex: 0,
+      command: "git commit -m altered", inputChecks: checks.port,
+    })).resolves.toMatchObject({ allowed: false, reason: "The command does not match the proposal." });
+    expect(checks.verify).toHaveBeenCalledOnce();
+  });
+
+  it("prepares the ordered push and request commands for a review request", async () => {
+    const checks = fakeRequestChecks();
+    const result = await prepareStageProposal({ mode: "request", draft: requestDraft, inputChecks: checks.port });
+    expect(result).toEqual({ ok: true, proposal: preparedRequest });
+    if (!result.ok || result.proposal.stage !== "request") throw new Error("Expected a prepared request proposal");
+
+    await expect(checkStageCommandInput({
+      mode: "request", proposal: result.proposal, commandIndex: 0,
+      command: preparedRequest.commands[0].command, inputChecks: checks.port,
+    })).resolves.toEqual({ allowed: true });
+    await expect(checkStageCommandInput({
+      mode: "full", proposal: result.proposal, commandIndex: 1,
+      command: preparedRequest.commands[1].command, inputChecks: checks.port,
+    })).resolves.toEqual({ allowed: true });
+    expect(checks.verify).toHaveBeenNthCalledWith(1, preparedRequest, "push");
+    expect(checks.verify).toHaveBeenNthCalledWith(2, preparedRequest, "create");
+  });
+
+  it("rejects incomplete proposals and adapter results that cannot be checked", async () => {
+    const commits = fakeCommitChecks();
+    const missingCommit = await prepareStageProposal({
+      mode: "commit", draft: { stage: "commit", commits: [{ message: " ", files: [] }] },
+      inputChecks: commits.port,
+    });
+    expect(missingCommit).toMatchObject({ ok: false, kind: "invalid-proposal" });
+    expect(commits.prepare).not.toHaveBeenCalled();
+
+    const requestChecks = fakeRequestChecks();
+    const missingBranch = await prepareStageProposal({
+      mode: "full", draft: { ...requestDraft, targetBranch: " " }, inputChecks: requestChecks.port,
+    });
+    expect(missingBranch).toMatchObject({ ok: false, kind: "invalid-proposal" });
+    expect(requestChecks.prepare).not.toHaveBeenCalled();
+
+    const missingSnapshot = fakeCommitChecks({
+      prepare: async () => ({
+        ok: true,
+        proposal: { ...preparedCommit, commits: [{ ...preparedCommit.commits[0], inputSnapshot: " " }] },
+      }),
+    });
+    await expect(prepareStageProposal({ mode: "commit", draft: commitDraft, inputChecks: missingSnapshot.port }))
+      .resolves.toMatchObject({ ok: false, kind: "invalid-proposal" });
+  });
+
+  it("enforces mode limits before calling either capability port", async () => {
+    const commitChecks = fakeCommitChecks();
+    const requestChecks = fakeRequestChecks();
+    await expect(prepareStageProposal({ mode: "request", draft: commitDraft, inputChecks: commitChecks.port }))
+      .resolves.toMatchObject({ ok: false, kind: "mode-disallowed" });
+    await expect(prepareStageProposal({ mode: "commit", draft: requestDraft, inputChecks: requestChecks.port }))
+      .resolves.toMatchObject({ ok: false, kind: "mode-disallowed" });
+    expect(commitChecks.prepare).not.toHaveBeenCalled();
+    expect(requestChecks.prepare).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when prepare or execution-time input checks fail", async () => {
+    const prepareFailure = await prepareStageProposal({
+      mode: "commit",
+      draft: commitDraft,
+      inputChecks: fakeCommitChecks({
+        prepare: async () => ({ ok: false, reason: "The commit input cannot be checked." }),
+      }).port,
+    });
+    expect(prepareFailure).toMatchObject({ ok: false, kind: "input-unverifiable" });
+
+    const failedCheck = await checkStageCommandInput({
+      mode: "full", proposal: preparedCommit, commandIndex: 0,
+      command: preparedCommit.commits[0].command,
+      inputChecks: fakeCommitChecks({
+        verify: async () => ({ ok: false, reason: "The working tree changed." }),
+      }).port,
+    });
+    expect(failedCheck).toEqual({ allowed: false, reason: "The working tree changed." });
+
+    const failedRequestCheck = await checkStageCommandInput({
+      mode: "request", proposal: preparedRequest, commandIndex: 1,
+      command: preparedRequest.commands[1].command,
+      inputChecks: fakeRequestChecks({ verify: async () => { throw new Error("Description changed."); } }).port,
+    });
+    expect(failedRequestCheck).toEqual({ allowed: false, reason: "Description changed." });
   });
 });
