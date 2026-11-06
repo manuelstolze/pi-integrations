@@ -11,6 +11,11 @@ export interface ProcessExecutionOptions {
   timeout: number;
 }
 
+export interface ProcessRunOptions {
+  /** Keep leading/trailing whitespace and NUL separators in machine-readable output. */
+  trimOutput?: boolean;
+}
+
 export type ProcessExecutor = (
   command: string,
   args: string[],
@@ -18,7 +23,7 @@ export type ProcessExecutor = (
 ) => Promise<ProcessResult>;
 
 export interface ProcessRunner {
-  run(command: string, args: string[]): Promise<ProcessResult>;
+  run(command: string, args: string[], options?: ProcessRunOptions): Promise<ProcessResult>;
 }
 
 export class ExecProcessRunner implements ProcessRunner {
@@ -27,15 +32,16 @@ export class ExecProcessRunner implements ProcessRunner {
     private readonly cwd: string,
   ) {}
 
-  async run(command: string, args: string[]): Promise<ProcessResult> {
+  async run(command: string, args: string[], options: ProcessRunOptions = {}): Promise<ProcessResult> {
     try {
       const result = await this.exec(command, args, {
         cwd: this.cwd,
         timeout: DEFAULT_COMMAND_TIMEOUT_MS,
       });
+      const trimOutput = options.trimOutput !== false;
       return {
-        stdout: result.stdout.trim(),
-        stderr: result.stderr.trim(),
+        stdout: trimOutput ? result.stdout.trim() : result.stdout,
+        stderr: trimOutput ? result.stderr.trim() : result.stderr,
         code: result.code,
       };
     } catch (error) {
