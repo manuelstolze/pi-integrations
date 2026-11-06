@@ -5,7 +5,7 @@ description: Write the technical plan for an approved code-change specification.
 
 # speckit plan — Write a technical plan
 
-Write `plan.md` for an approved code-change `spec.md`.
+Write `plan.md` in Headquarter beside the approved code-change `spec.md`. Locate the Headquarter repository and follow its `.agents/skills/workflow/plan/SKILL.md`. If its location is unknown, ask the owner.
 
 Repository paths below are relative to the repository root unless given as Markdown links.
 

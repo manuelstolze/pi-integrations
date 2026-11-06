@@ -20,7 +20,7 @@ Pi loads these packages as extensions and provides the Pi APIs they use. Each pa
 
 > **As-built note (2026-10-08, REPO-001).** The decision is unchanged. The package manifests now declare `@earendil-works/pi-coding-agent` as `>=1.1.0 <2`, not `>=0.85.1 <1`. The permission-gate package now declares `@earendil-works/pi-tui` as `>=1.1.0 <2`. The text is left as written.
 
-> **As-built note (2026-10-21, [REPO-003](../../specs/repository/003-require-pi-1-3/spec.md)).** The decision is unchanged. All five extension packages now declare `@earendil-works/pi-coding-agent` as `>=1.3.0 <2`. Model-warning and permission-gate also declare `@earendil-works/pi-tui` as `>=1.3.0 <2`. Corresponding development dependencies use `^1.3.0`. The root workspace also uses Pi `^1.3.0` for development. The earlier text and notes are left as written.
+> **As-built note (2026-10-21, [REPO-003](https://github.com/manuelstolze/pi-integrations/blob/82c0915875940b0d40592c56b65a96bc69fe7e40/specs/repository/003-require-pi-1-3/spec.md)).** The decision is unchanged. All five extension packages now declare `@earendil-works/pi-coding-agent` as `>=1.3.0 <2`. Model-warning and permission-gate also declare `@earendil-works/pi-tui` as `>=1.3.0 <2`. Corresponding development dependencies use `^1.3.0`. The root workspace also uses Pi `^1.3.0` for development. The earlier text and notes are left as written.
 
 ## Options in scope
 

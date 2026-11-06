@@ -92,9 +92,9 @@ This ADR amends ADR-0001 only for this limited write capability. ADR-0001 remain
 
 ## References
 
-- [JIRA-002 specification](../../specs/jira-integration/002-update-issue-content/spec.md)
-- [JIRA-002 technical plan](../../specs/jira-integration/002-update-issue-content/plan.md)
-- [CLI and Pi evidence](../../specs/jira-integration/002-update-issue-content/cli-findings.md)
+- [JIRA-002 specification](https://github.com/manuelstolze/pi-integrations/blob/82c0915875940b0d40592c56b65a96bc69fe7e40/specs/jira-integration/002-update-issue-content/spec.md)
+- [JIRA-002 technical plan](https://github.com/manuelstolze/pi-integrations/blob/82c0915875940b0d40592c56b65a96bc69fe7e40/specs/jira-integration/002-update-issue-content/plan.md)
+- [CLI and Pi evidence](https://github.com/manuelstolze/pi-integrations/blob/82c0915875940b0d40592c56b65a96bc69fe7e40/specs/jira-integration/002-update-issue-content/cli-findings.md)
 - [ADR-0001](0001-read-only-jira-access.md)
 - [ADR-0002](0002-use-atlassian-cli-for-jira-access.md)
 - [ADR-0005](0005-adopt-hexagonal-ddd-architecture.md)

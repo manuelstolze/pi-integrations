@@ -1,13 +1,12 @@
 # Technical plan: <title>
 
-<!-- Save as specs/<area>/<change>/plan.md beside the approved spec.md.
-Replace placeholders with verified facts. Keep sections brief. Use "None" or
-"Not applicable" with a reason when a section does not apply.
-Repository paths below are relative to the repository root. -->
+<!-- Reference for repository-specific planning concerns. Create new plans with the
+Headquarter template beside the approved specification. Replace placeholders with
+verified facts. Repository paths below are relative to the pi-integrations root. -->
 
 ## 1. Status and approval
 
-- **Specification:** `specs/<area>/<change>/spec.md`
+- **Specification:** Headquarter `specs/pi-integrations/<change-slug>/spec.md`
 - **Specification approval:** <owner and approval reference; required before planning>
 - **Plan status:** Draft — owner approval pending.
 - **Task breakdown:** Not started — requires plan approval.

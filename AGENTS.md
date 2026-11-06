@@ -6,6 +6,8 @@ This repository is a monorepo for Pi coding agent extensions, published as separ
 
 Read [the engineering constitution](CONSTITUTION.md) before each task. It sets mandatory rules and takes precedence over other repository guidance.
 
+Specifications, plans, and task lists for this repository live in Headquarter under `specs/pi-integrations/`. Ask the owner for the Headquarter path if it is unknown. Follow Headquarter's workflow and this repository's rules before code changes.
+
 ## Load guidance when it applies
 
 - For package changes, tests, releases, or Git workflow, follow [Contributing](CONTRIBUTING.md).
